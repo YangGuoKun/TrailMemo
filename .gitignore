@@ -14,6 +14,7 @@ desktop.ini
 
 /doc
 /doc/
+/trailmemo-rag/
 
 # Local agent/tooling state
 .agents/
