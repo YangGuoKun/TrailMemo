@@ -1,0 +1,3549 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "迹忆旅图寻迹旅游后端 API 文档",
+        "title": "TrailMemo API",
+        "termsOfService": "https://example.com/terms",
+        "contact": {
+            "name": "API Support",
+            "email": "support@example.com"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "https://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "1.0.0"
+    },
+    "host": "localhost:8087",
+    "basePath": "/",
+    "paths": {
+        "/agent/artifacts/{artifact_id}/commit": {
+            "post": {
+                "description": "用户确认后将草稿导入为真实Route或Post，支持幂等",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "产物"
+                ],
+                "summary": "提交产物到业务实体",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "产物ID",
+                        "name": "artifact_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "提交请求",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_internal_agent_dto.ArtifactCommitRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/github_com_trailmemo_internal_agent_dto.ArtifactCommitResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/agent/capabilities": {
+            "get": {
+                "description": "返回支持的意图、工具和运行模式",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Agent"
+                ],
+                "summary": "Agent 能力列表",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/github_com_trailmemo_internal_agent_dto.CapabilityResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/agent/chat": {
+            "post": {
+                "description": "有界推理循环处理用户消息，意图自动路由",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "对话"
+                ],
+                "summary": "Agent 对话（非流式）",
+                "parameters": [
+                    {
+                        "description": "对话请求",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_internal_agent_dto.ChatRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/github_com_trailmemo_internal_agent_dto.ChatLoopResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/agent/chat/stream": {
+            "post": {
+                "description": "通过 Server-Sent Events 实时推送 AI 回复 token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "text/event-stream"
+                ],
+                "tags": [
+                    "对话"
+                ],
+                "summary": "Agent 流式对话（SSE）",
+                "parameters": [
+                    {
+                        "description": "对话请求",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_internal_agent_dto.ChatRequest"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/agent/health": {
+            "get": {
+                "description": "返回 Agent 模块运行状态和 LLM 配置",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Agent"
+                ],
+                "summary": "Agent 健康检查",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/github_com_trailmemo_internal_agent_dto.HealthResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/agent/metrics": {
+            "get": {
+                "description": "返回累计请求数、成功率、token用量、延迟分布",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Agent"
+                ],
+                "summary": "Agent 运行指标",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/agent/notes/generate": {
+            "post": {
+                "description": "从路线打卡记录自动生成游记草稿",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "游记"
+                ],
+                "summary": "打卡生成游记",
+                "parameters": [
+                    {
+                        "description": "游记请求",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_internal_agent_dto.TravelNoteRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/github_com_trailmemo_internal_agent_dto.TravelNoteResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/agent/preferences": {
+            "get": {
+                "description": "返回AI从用户行为中学习到的偏好快照",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "偏好"
+                ],
+                "summary": "查看AI画像",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "用户显式设置旅行偏好",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "偏好"
+                ],
+                "summary": "手动更新偏好",
+                "parameters": [
+                    {
+                        "description": "偏好更新",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_internal_agent_memory.PreferenceUpdate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/agent/preferences/memory": {
+            "delete": {
+                "description": "删除所有AI学到的用户偏好数据",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "偏好"
+                ],
+                "summary": "清空AI记忆",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/agent/recommend": {
+            "post": {
+                "description": "根据用户需求和历史偏好生成目的地推荐",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "推荐"
+                ],
+                "summary": "旅行推荐",
+                "parameters": [
+                    {
+                        "description": "推荐请求",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_internal_agent_dto.RecommendRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/github_com_trailmemo_internal_agent_dto.RecommendResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/agent/routes/draft": {
+            "post": {
+                "description": "自然语言→结构化路线草稿（打卡点/预算/时长）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "路线"
+                ],
+                "summary": "一句话生成路线草稿",
+                "parameters": [
+                    {
+                        "description": "路线需求",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_internal_agent_dto.RouteDraftRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/github_com_trailmemo_internal_agent_dto.RouteDraftResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/agent/routes/{id}/remix": {
+            "post": {
+                "description": "基于公开路线按需求改造（亲子版/情侣版/美食版）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "路线"
+                ],
+                "summary": "改造公开路线",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "原路线ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "改造需求",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_internal_agent_dto.RemixRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/github_com_trailmemo_internal_agent_dto.RemixResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/agent/sessions": {
+            "get": {
+                "description": "获取当前用户的所有Agent对话会话，按时间倒序",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "会话"
+                ],
+                "summary": "会话列表",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/github_com_trailmemo_internal_agent_dto.SessionListResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/agent/sessions/{id}": {
+            "get": {
+                "description": "获取指定会话的消息历史，含expired标记",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "会话"
+                ],
+                "summary": "会话详情",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "会话ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/github_com_trailmemo_internal_agent_dto.SessionDetailResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "同时清理 MySQL 元数据和 Redis 消息历史",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "会话"
+                ],
+                "summary": "删除会话",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "会话ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/agent/sessions/{id}/title": {
+            "put": {
+                "description": "修改会话标题",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "会话"
+                ],
+                "summary": "重命名会话",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "会话ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "新标题",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_internal_agent_dto.RenameSessionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/checkins": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "获取用户的所有打卡记录，可按路线筛选",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "打卡"
+                ],
+                "summary": "获取打卡记录列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "路线ID",
+                        "name": "route_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "在指定打卡点创建新的打卡记录",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "打卡"
+                ],
+                "summary": "创建打卡记录",
+                "parameters": [
+                    {
+                        "description": "打卡信息",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.CreateCheckinRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/checkins/progress/{route_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "获取指定路线的打卡进度统计",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "打卡"
+                ],
+                "summary": "获取路线打卡进度",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "路线ID",
+                        "name": "route_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/checkins/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "获取指定ID的打卡记录详情",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "打卡"
+                ],
+                "summary": "获取打卡详情",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "打卡记录ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "更新自己的打卡记录",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "打卡"
+                ],
+                "summary": "更新打卡记录",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "打卡记录ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "打卡信息",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.UpdateCheckinRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "删除自己的打卡记录",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "打卡"
+                ],
+                "summary": "删除打卡记录",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "打卡记录ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/comments": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "获取指定分享的评论列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "评论"
+                ],
+                "summary": "获取评论列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "分享ID",
+                        "name": "post_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "在分享下创建评论",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "评论"
+                ],
+                "summary": "创建评论",
+                "parameters": [
+                    {
+                        "description": "评论信息",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.CreateCommentRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/comments/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "获取指定ID的评论详情",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "评论"
+                ],
+                "summary": "获取评论详情",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "评论ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "更新自己的评论内容",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "评论"
+                ],
+                "summary": "更新评论",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "评论ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "评论内容",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.UpdateCommentRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "删除自己的评论",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "评论"
+                ],
+                "summary": "删除评论",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "评论ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/favorites/count": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "获取路线的收藏数量",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "收藏"
+                ],
+                "summary": "获取收藏数量",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "路线ID",
+                        "name": "route_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/favorites/list": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "获取用户收藏的所有路线",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "收藏"
+                ],
+                "summary": "获取用户收藏列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/favorites/status": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "检查用户是否已收藏指定路线",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "收藏"
+                ],
+                "summary": "获取收藏状态",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "路线ID",
+                        "name": "route_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/favorites/toggle": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "对路线进行收藏或取消收藏",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "收藏"
+                ],
+                "summary": "收藏/取消收藏",
+                "parameters": [
+                    {
+                        "description": "收藏信息",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ToggleFavoriteRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/likes/count": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "获取目标内容的点赞数量",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "点赞"
+                ],
+                "summary": "获取点赞数量",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "目标ID",
+                        "name": "target_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "目标类型",
+                        "name": "target_type",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/likes/status": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "检查用户是否已对目标进行点赞",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "点赞"
+                ],
+                "summary": "获取点赞状态",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "目标ID",
+                        "name": "target_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "目标类型",
+                        "name": "target_type",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/likes/toggle": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "对分享或评论进行点赞或取消点赞",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "点赞"
+                ],
+                "summary": "点赞/取消点赞",
+                "parameters": [
+                    {
+                        "description": "点赞信息",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ToggleLikeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/posts": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "获取分享列表，可按用户或路线筛选",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "分享"
+                ],
+                "summary": "获取分享列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "用户ID",
+                        "name": "user_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "路线ID",
+                        "name": "route_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "创建新的旅行分享帖子",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "分享"
+                ],
+                "summary": "创建分享",
+                "parameters": [
+                    {
+                        "description": "分享信息",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.CreatePostRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/posts/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "获取指定ID的分享详情",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "分享"
+                ],
+                "summary": "获取分享详情",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "分享ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "更新自己的分享内容",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "分享"
+                ],
+                "summary": "更新分享",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "分享ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "分享信息",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.UpdatePostRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "删除自己的分享",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "分享"
+                ],
+                "summary": "删除分享",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "分享ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/routes": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "获取当前用户创建的所有路线",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "路线"
+                ],
+                "summary": "获取路线列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "创建新的旅游路线，包含多个打卡点",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "路线"
+                ],
+                "summary": "创建路线",
+                "parameters": [
+                    {
+                        "description": "路线信息",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.CreateRouteRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/routes/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "获取指定ID的路线详细信息，包含所有打卡点",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "路线"
+                ],
+                "summary": "获取路线详情",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "路线ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "更新自己创建的路线信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "路线"
+                ],
+                "summary": "更新路线",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "路线ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "路线信息",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.UpdateRouteRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "删除自己创建的路线",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "路线"
+                ],
+                "summary": "删除路线",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "路线ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/routes/{id}/copy": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "复制他人公开的路线，成为自己的路线",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "路线"
+                ],
+                "summary": "复用路线",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "原路线ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "新路线公开状态",
+                        "name": "body",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.CopyRouteRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/upload/avatar": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "上传图片文件作为用户头像",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "文件上传"
+                ],
+                "summary": "上传用户头像",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "头像图片文件",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/login": {
+            "post": {
+                "description": "使用用户名和密码登录",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "用户"
+                ],
+                "summary": "用户登录",
+                "parameters": [
+                    {
+                        "description": "登录信息",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/login/wechat": {
+            "post": {
+                "description": "使用微信授权码登录",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "用户"
+                ],
+                "summary": "微信小程序登录",
+                "parameters": [
+                    {
+                        "description": "微信授权码",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.WechatLoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/me": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "获取当前登录用户的详细信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "用户"
+                ],
+                "summary": "获取用户信息",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "更新当前登录用户的昵称和头像",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "用户"
+                ],
+                "summary": "更新用户信息",
+                "parameters": [
+                    {
+                        "description": "用户信息",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.UpdateUserInfoRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/me/password": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "修改当前登录用户的密码",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "用户"
+                ],
+                "summary": "修改密码",
+                "parameters": [
+                    {
+                        "description": "密码信息",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.ChangePasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/register": {
+            "post": {
+                "description": "创建新用户账号",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "用户"
+                ],
+                "summary": "用户注册",
+                "parameters": [
+                    {
+                        "description": "注册信息",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.RegisterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_trailmemo_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "github_com_trailmemo_internal_agent_dto.ArtifactCommitRequest": {
+            "type": "object",
+            "required": [
+                "commit_type",
+                "idempotency_key"
+            ],
+            "properties": {
+                "commit_type": {
+                    "description": "\"create_route\" / \"create_post\"",
+                    "type": "string"
+                },
+                "idempotency_key": {
+                    "description": "幂等键",
+                    "type": "string"
+                },
+                "is_public": {
+                    "description": "是否公开（仅 create_route）",
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_trailmemo_internal_agent_dto.ArtifactCommitResponse": {
+            "type": "object",
+            "properties": {
+                "artifact_id": {
+                    "description": "产物 ID",
+                    "type": "string"
+                },
+                "entity_id": {
+                    "description": "业务实体 ID",
+                    "type": "integer"
+                },
+                "entity_type": {
+                    "description": "route / post",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "committed",
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_trailmemo_internal_agent_dto.CapabilityResponse": {
+            "type": "object",
+            "properties": {
+                "default_mode": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "intents": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "max_steps": {
+                    "type": "integer"
+                },
+                "max_tool_calls": {
+                    "type": "integer"
+                },
+                "stage": {
+                    "type": "string"
+                },
+                "tools": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_trailmemo_internal_agent_tools.ToolDescriptor"
+                    }
+                }
+            }
+        },
+        "github_com_trailmemo_internal_agent_dto.ChatLoopResponse": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "finish_reason": {
+                    "type": "string"
+                },
+                "latency_ms": {
+                    "type": "integer"
+                },
+                "steps": {
+                    "type": "integer"
+                },
+                "tool_calls": {
+                    "type": "integer"
+                },
+                "total_tokens": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_trailmemo_internal_agent_dto.ChatRequest": {
+            "type": "object",
+            "required": [
+                "message"
+            ],
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "session_id": {
+                    "description": "可选，用于多轮对话",
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_trailmemo_internal_agent_dto.CheckpointDraftData": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "arrive_time": {
+                    "type": "string"
+                },
+                "city": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "latitude": {
+                    "type": "number"
+                },
+                "longitude": {
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "sequence": {
+                    "type": "integer"
+                },
+                "stay_duration": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_trailmemo_internal_agent_dto.HealthResponse": {
+            "type": "object",
+            "properties": {
+                "default_mode": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "llm_configured": {
+                    "type": "boolean"
+                },
+                "request_timeout": {
+                    "type": "string"
+                },
+                "stage": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "stream_timeout": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_trailmemo_internal_agent_dto.RecommendItem": {
+            "type": "object",
+            "properties": {
+                "city": {
+                    "type": "string"
+                },
+                "days": {
+                    "type": "integer"
+                },
+                "estimated_budget": {
+                    "type": "integer"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_trailmemo_internal_agent_dto.RecommendRequest": {
+            "type": "object",
+            "required": [
+                "query"
+            ],
+            "properties": {
+                "budget": {
+                    "type": "integer"
+                },
+                "days": {
+                    "type": "integer"
+                },
+                "interests": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "query": {
+                    "type": "string"
+                },
+                "travel_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_trailmemo_internal_agent_dto.RecommendResponse": {
+            "type": "object",
+            "properties": {
+                "artifact_id": {
+                    "type": "string"
+                },
+                "fallback": {
+                    "type": "boolean"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_trailmemo_internal_agent_dto.RecommendItem"
+                    }
+                },
+                "run_id": {
+                    "type": "string"
+                },
+                "warnings": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "github_com_trailmemo_internal_agent_dto.RemixChangeItem": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "description": "added/removed/modified",
+                    "type": "string"
+                },
+                "point": {
+                    "description": "打卡点名称",
+                    "type": "string"
+                },
+                "reason": {
+                    "description": "变更原因",
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_trailmemo_internal_agent_dto.RemixRequest": {
+            "type": "object",
+            "required": [
+                "query"
+            ],
+            "properties": {
+                "budget": {
+                    "type": "integer"
+                },
+                "days": {
+                    "type": "integer"
+                },
+                "query": {
+                    "type": "string"
+                },
+                "travel_styles": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "github_com_trailmemo_internal_agent_dto.RemixResponse": {
+            "type": "object",
+            "properties": {
+                "approval_required": {
+                    "type": "boolean"
+                },
+                "artifact_id": {
+                    "type": "string"
+                },
+                "change_summary": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_trailmemo_internal_agent_dto.RemixChangeItem"
+                    }
+                },
+                "next_action": {
+                    "type": "string"
+                },
+                "route_draft": {
+                    "$ref": "#/definitions/github_com_trailmemo_internal_agent_dto.RouteDraftData"
+                },
+                "run_id": {
+                    "type": "string"
+                },
+                "source_route_id": {
+                    "type": "integer"
+                },
+                "warnings": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "github_com_trailmemo_internal_agent_dto.RenameSessionRequest": {
+            "type": "object",
+            "required": [
+                "title"
+            ],
+            "properties": {
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_trailmemo_internal_agent_dto.RouteDraftData": {
+            "type": "object",
+            "properties": {
+                "checkpoints": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_trailmemo_internal_agent_dto.CheckpointDraftData"
+                    }
+                },
+                "end_city": {
+                    "type": "string"
+                },
+                "estimated_budget": {
+                    "type": "integer"
+                },
+                "estimated_hours": {
+                    "type": "integer"
+                },
+                "start_city": {
+                    "type": "string"
+                },
+                "summary": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_trailmemo_internal_agent_dto.RouteDraftRequest": {
+            "type": "object",
+            "required": [
+                "query"
+            ],
+            "properties": {
+                "budget": {
+                    "description": "预算（元）",
+                    "type": "integer"
+                },
+                "days": {
+                    "description": "出行天数",
+                    "type": "integer"
+                },
+                "query": {
+                    "description": "用户自然语言需求",
+                    "type": "string"
+                },
+                "start_city": {
+                    "description": "出发城市",
+                    "type": "string"
+                },
+                "target_city": {
+                    "description": "目标城市",
+                    "type": "string"
+                },
+                "travel_styles": {
+                    "description": "旅行风格标签",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "github_com_trailmemo_internal_agent_dto.RouteDraftResponse": {
+            "type": "object",
+            "properties": {
+                "approval_required": {
+                    "description": "是否需要确认",
+                    "type": "boolean"
+                },
+                "artifact_id": {
+                    "description": "产物 ID",
+                    "type": "string"
+                },
+                "next_action": {
+                    "description": "后续操作",
+                    "type": "string"
+                },
+                "route_draft": {
+                    "description": "路线草稿数据",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_trailmemo_internal_agent_dto.RouteDraftData"
+                        }
+                    ]
+                },
+                "run_id": {
+                    "description": "Agent 运行 ID",
+                    "type": "string"
+                },
+                "warnings": {
+                    "description": "警告",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "github_com_trailmemo_internal_agent_dto.SessionDetailResponse": {
+            "type": "object",
+            "properties": {
+                "expired": {
+                    "type": "boolean"
+                },
+                "message_count": {
+                    "type": "integer"
+                },
+                "messages": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_trailmemo_internal_agent_dto.SessionMsg"
+                    }
+                },
+                "session_id": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_trailmemo_internal_agent_dto.SessionInfo": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "last_message_at": {
+                    "type": "string"
+                },
+                "message_count": {
+                    "type": "integer"
+                },
+                "model": {
+                    "type": "string"
+                },
+                "session_id": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_trailmemo_internal_agent_dto.SessionListResponse": {
+            "type": "object",
+            "properties": {
+                "sessions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_trailmemo_internal_agent_dto.SessionInfo"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_trailmemo_internal_agent_dto.SessionMsg": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_trailmemo_internal_agent_dto.TravelNoteRequest": {
+            "type": "object",
+            "required": [
+                "route_id"
+            ],
+            "properties": {
+                "include_checkin_content": {
+                    "type": "boolean"
+                },
+                "include_images": {
+                    "type": "boolean"
+                },
+                "route_id": {
+                    "type": "integer"
+                },
+                "style": {
+                    "description": "story/journal/guide/social/poetic",
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_trailmemo_internal_agent_dto.TravelNoteResponse": {
+            "type": "object",
+            "properties": {
+                "approval_required": {
+                    "type": "boolean"
+                },
+                "artifact_id": {
+                    "type": "string"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "image_refs": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "next_action": {
+                    "type": "string"
+                },
+                "run_id": {
+                    "type": "string"
+                },
+                "suggested_tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "title": {
+                    "type": "string"
+                },
+                "warnings": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "github_com_trailmemo_internal_agent_memory.PreferenceUpdate": {
+            "type": "object",
+            "properties": {
+                "budget_range": {
+                    "type": "string"
+                },
+                "companion_types": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "interests": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "pace": {
+                    "type": "string"
+                },
+                "preferred_cities": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "travel_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_trailmemo_internal_agent_tools.Permission": {
+            "type": "string",
+            "enum": [
+                "read",
+                "draft_write",
+                "user_write",
+                "public_action",
+                "dangerous"
+            ],
+            "x-enum-comments": {
+                "PermissionDangerous": "危险操作权限",
+                "PermissionDraftWrite": "草稿写入权限",
+                "PermissionPublicAction": "公共操作权限",
+                "PermissionRead": "读取权限",
+                "PermissionUserWrite": "用户写入权限"
+            },
+            "x-enum-descriptions": [
+                "读取权限",
+                "草稿写入权限",
+                "用户写入权限",
+                "公共操作权限",
+                "危险操作权限"
+            ],
+            "x-enum-varnames": [
+                "PermissionRead",
+                "PermissionDraftWrite",
+                "PermissionUserWrite",
+                "PermissionPublicAction",
+                "PermissionDangerous"
+            ]
+        },
+        "github_com_trailmemo_internal_agent_tools.ToolDescriptor": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "description": "工具描述",
+                    "type": "string"
+                },
+                "enabled": {
+                    "description": "是否启用",
+                    "type": "boolean"
+                },
+                "name": {
+                    "description": "工具名称",
+                    "type": "string"
+                },
+                "permission": {
+                    "description": "工具权限",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_trailmemo_internal_agent_tools.Permission"
+                        }
+                    ]
+                },
+                "phase": {
+                    "description": "工具阶段",
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_trailmemo_pkg_response.Response": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 200
+                },
+                "data": {},
+                "error_code": {
+                    "type": "string",
+                    "example": "ROUTE_NOT_FOUND"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "success"
+                },
+                "request_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_handler.ChangePasswordRequest": {
+            "type": "object",
+            "required": [
+                "newPassword",
+                "oldPassword"
+            ],
+            "properties": {
+                "newPassword": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 6,
+                    "example": "654321"
+                },
+                "oldPassword": {
+                    "type": "string",
+                    "example": "123456"
+                }
+            }
+        },
+        "internal_handler.CheckpointInput": {
+            "type": "object",
+            "required": [
+                "name",
+                "sequence"
+            ],
+            "properties": {
+                "address": {
+                    "type": "string",
+                    "example": "成都市青羊区宽窄巷子"
+                },
+                "arriveTime": {
+                    "type": "string",
+                    "example": "2024-06-01 10:00"
+                },
+                "city": {
+                    "type": "string",
+                    "example": "成都"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "成都著名景点"
+                },
+                "latitude": {
+                    "type": "number",
+                    "example": 30.6562
+                },
+                "longitude": {
+                    "type": "number",
+                    "example": 104.0657
+                },
+                "name": {
+                    "type": "string",
+                    "example": "宽窄巷子"
+                },
+                "photoURL": {
+                    "type": "string",
+                    "example": "https://example.com/photo.jpg"
+                },
+                "sequence": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "stayDuration": {
+                    "type": "integer",
+                    "example": 120
+                }
+            }
+        },
+        "internal_handler.CopyRouteRequest": {
+            "type": "object",
+            "properties": {
+                "isPublic": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "internal_handler.CreateCheckinRequest": {
+            "type": "object",
+            "required": [
+                "checkpoint_id",
+                "route_id"
+            ],
+            "properties": {
+                "checkpoint_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "content": {
+                    "type": "string",
+                    "example": "这里的美食太好吃了！"
+                },
+                "latitude": {
+                    "type": "number",
+                    "example": 30.6562
+                },
+                "longitude": {
+                    "type": "number",
+                    "example": 104.0657
+                },
+                "photo_url": {
+                    "type": "string",
+                    "example": "https://example.com/checkin.jpg"
+                },
+                "rating": {
+                    "type": "integer",
+                    "maximum": 5,
+                    "minimum": 1,
+                    "example": 5
+                },
+                "route_id": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "internal_handler.CreateCommentRequest": {
+            "type": "object",
+            "required": [
+                "content",
+                "post_id"
+            ],
+            "properties": {
+                "content": {
+                    "type": "string",
+                    "example": "评论内容"
+                },
+                "parent_id": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "post_id": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "internal_handler.CreatePostRequest": {
+            "type": "object",
+            "required": [
+                "content",
+                "title"
+            ],
+            "properties": {
+                "content": {
+                    "type": "string",
+                    "example": "这次旅行太棒了！"
+                },
+                "images": {
+                    "type": "string",
+                    "example": "https://example.com/photo1.jpg,https://example.com/photo2.jpg"
+                },
+                "route_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "title": {
+                    "type": "string",
+                    "example": "我的旅行分享"
+                }
+            }
+        },
+        "internal_handler.CreateRouteRequest": {
+            "type": "object",
+            "required": [
+                "endCity",
+                "startCity",
+                "title"
+            ],
+            "properties": {
+                "checkpoints": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_handler.CheckpointInput"
+                    }
+                },
+                "coverImage": {
+                    "type": "string",
+                    "example": "https://example.com/cover.jpg"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "成都美食之旅"
+                },
+                "endCity": {
+                    "type": "string",
+                    "example": "成都"
+                },
+                "estimatedHours": {
+                    "type": "number",
+                    "example": 24
+                },
+                "isPublic": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "startCity": {
+                    "type": "string",
+                    "example": "成都"
+                },
+                "title": {
+                    "type": "string",
+                    "example": "成都三日游"
+                },
+                "totalDistance": {
+                    "type": "number",
+                    "example": 100.5
+                }
+            }
+        },
+        "internal_handler.LoginRequest": {
+            "type": "object",
+            "required": [
+                "password",
+                "username"
+            ],
+            "properties": {
+                "password": {
+                    "type": "string",
+                    "example": "123456"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "testuser"
+                }
+            }
+        },
+        "internal_handler.RegisterRequest": {
+            "type": "object",
+            "required": [
+                "password",
+                "username"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "test@example.com"
+                },
+                "password": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "minLength": 6,
+                    "example": "123456"
+                },
+                "phone": {
+                    "type": "string",
+                    "example": "+8613800138000"
+                },
+                "username": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "minLength": 3,
+                    "example": "testuser"
+                }
+            }
+        },
+        "internal_handler.ToggleFavoriteRequest": {
+            "type": "object",
+            "required": [
+                "route_id"
+            ],
+            "properties": {
+                "route_id": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "internal_handler.ToggleLikeRequest": {
+            "type": "object",
+            "required": [
+                "target_id",
+                "target_type"
+            ],
+            "properties": {
+                "target_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "target_type": {
+                    "type": "string",
+                    "example": "post"
+                }
+            }
+        },
+        "internal_handler.UpdateCheckinRequest": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string",
+                    "example": "更新后的内容"
+                },
+                "photo_url": {
+                    "type": "string",
+                    "example": "https://example.com/new-photo.jpg"
+                },
+                "rating": {
+                    "type": "integer",
+                    "maximum": 5,
+                    "minimum": 1,
+                    "example": 4
+                }
+            }
+        },
+        "internal_handler.UpdateCommentRequest": {
+            "type": "object",
+            "required": [
+                "content"
+            ],
+            "properties": {
+                "content": {
+                    "type": "string",
+                    "example": "更新后的评论内容"
+                }
+            }
+        },
+        "internal_handler.UpdatePostRequest": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string",
+                    "example": "更新后的内容"
+                },
+                "images": {
+                    "type": "string",
+                    "example": "https://example.com/new-photo.jpg"
+                },
+                "title": {
+                    "type": "string",
+                    "example": "更新后的标题"
+                }
+            }
+        },
+        "internal_handler.UpdateRouteRequest": {
+            "type": "object",
+            "properties": {
+                "coverImage": {
+                    "type": "string",
+                    "example": "https://example.com/new-cover.jpg"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "更新后的描述"
+                },
+                "endCity": {
+                    "type": "string",
+                    "example": "成都"
+                },
+                "estimatedHours": {
+                    "type": "number",
+                    "example": 36
+                },
+                "isPublic": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "startCity": {
+                    "type": "string",
+                    "example": "成都"
+                },
+                "title": {
+                    "type": "string",
+                    "example": "成都三日游（更新）"
+                },
+                "totalDistance": {
+                    "type": "number",
+                    "example": 150
+                }
+            }
+        },
+        "internal_handler.UpdateUserInfoRequest": {
+            "type": "object",
+            "properties": {
+                "avatar": {
+                    "type": "string",
+                    "example": "https://example.com/avatar.jpg"
+                },
+                "nickname": {
+                    "type": "string",
+                    "example": "新昵称"
+                }
+            }
+        },
+        "internal_handler.WechatLoginRequest": {
+            "type": "object",
+            "required": [
+                "code"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "081aBc1234567"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    }
+}

@@ -1,0 +1,150 @@
+{
+  "easycom": {
+    "autoscan": true,
+    "custom": {
+      "^u-(.*)": "uview-plus/components/u-$1/u-$1.vue",
+      "^tm-(.*)": "@/components/common/Tm$1.vue"
+    }
+  },
+  "pages": [
+    {
+      "path": "pages/index/index",
+      "style": {
+        "navigationBarTitleText": "发现",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/routes/index",
+      "style": {
+        "navigationBarTitleText": "我的路线",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/profile/index",
+      "style": {
+        "navigationBarTitleText": "我的",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/login/index",
+      "style": {
+        "navigationBarTitleText": "登录",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/route-detail/index",
+      "style": {
+        "navigationBarTitleText": "路线详情",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/route-create/index",
+      "style": {
+        "navigationBarTitleText": "创建路线",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/checkin-create/index",
+      "style": {
+        "navigationBarTitleText": "发布打卡",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/checkpoint-detail/index",
+      "style": {
+        "navigationBarTitleText": "打卡点详情",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/profile-edit/index",
+      "style": {
+        "navigationBarTitleText": "编辑资料",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/password-change/index",
+      "style": {
+        "navigationBarTitleText": "修改密码",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/agent/index",
+      "style": { "navigationBarTitleText": "AI 助手", "navigationStyle": "custom" }
+    },
+    {
+      "path": "pages/preferences/index",
+      "style": { "navigationBarTitleText": "AI 偏好设置", "navigationStyle": "custom" }
+    },
+    {
+      "path": "pages/community-create/index",
+      "style": { "navigationBarTitleText": "发布帖子", "navigationStyle": "custom" }
+    },
+    {
+      "path": "pages/settings/index",
+      "style": {
+        "navigationBarTitleText": "设置",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/post-detail/index",
+      "style": {
+        "navigationBarTitleText": "帖子详情",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/my-posts/index",
+      "style": {
+        "navigationBarTitleText": "我的游记",
+        "navigationStyle": "custom"
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "迹忆旅图",
+    "navigationBarBackgroundColor": "#FFFFFF",
+    "backgroundColor": "#F2F2F7",
+    "backgroundColorTop": "#F2F2F7",
+    "backgroundColorBottom": "#F2F2F7",
+    "pageOrientation": "portrait"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#8E8E93",
+    "selectedColor": "#0DA5BF",
+    "backgroundColor": "#F9F9FB",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "发现",
+        "iconPath": "static/icons/tab-discover.png",
+        "selectedIconPath": "static/icons/tab-discover-active.png"
+      },
+      {
+        "pagePath": "pages/routes/index",
+        "text": "路线",
+        "iconPath": "static/icons/tab-routes.png",
+        "selectedIconPath": "static/icons/tab-routes-active.png"
+      },
+      {
+        "pagePath": "pages/profile/index",
+        "text": "我的",
+        "iconPath": "static/icons/tab-profile.png",
+        "selectedIconPath": "static/icons/tab-profile-active.png"
+      }
+    ]
+  }
+}

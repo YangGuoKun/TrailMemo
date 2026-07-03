@@ -1,0 +1,149 @@
+// ============================================
+// uni-app 全局 SCSS
+// uni-app 自动将此文件注入所有 .vue 组件
+// ============================================
+
+// uView Plus 主题 (必须最先导入，提供 flex 等 mixin)
+@import 'uview-plus/theme.scss';
+
+// 覆盖 uView Plus 主色调
+$u-primary: #0DA5BF;
+$u-primary-dark: #0A8A9E;
+$u-primary-light: #E6F7FA;
+$u-success: #34C759;
+$u-warning: #FF9F0A;
+$u-error: #FF3B30;
+$u-info: #007AFF;
+
+// ── TrailMemo 设计 Token (Apple HIG 风格) ──
+
+// 主色调
+$color-primary-50:  #E6F7FA;
+$color-primary-100: #B3E8F0;
+$color-primary-200: #80D9E6;
+$color-primary-300: #4DCADC;
+$color-primary-400: #26BBD2;
+$color-primary-500: #0DA5BF;
+$color-primary-600: #0A8A9E;
+$color-primary-700: #076F7E;
+$color-primary-800: #05545E;
+$color-primary-900: #02393F;
+
+// 语义色
+$color-success: #34C759;
+$color-warning: #FF9F0A;
+$color-error:   #FF3B30;
+$color-info:    #007AFF;
+
+// 中性灰
+$color-gray-50:  #F9F9F9;
+$color-gray-100: #F2F2F7;
+$color-gray-200: #E5E5EA;
+$color-gray-300: #D1D1D6;
+$color-gray-400: #C7C7CC;
+$color-gray-500: #AEAEB2;
+$color-gray-600: #8E8E93;
+$color-gray-700: #636366;
+$color-gray-800: #3A3A3C;
+$color-gray-900: #1C1C1E;
+
+// 背景色
+$color-bg-primary:    #FFFFFF;
+$color-bg-secondary:  #F2F2F7;
+$color-bg-tertiary:   #E5E5EA;
+
+// 毛玻璃
+$glass-bg:     rgba(255, 255, 255, 0.72);
+$glass-blur:   20px;
+$glass-border: rgba(0, 0, 0, 0.08);
+
+// 微信色
+$color-wechat: #07C160;
+
+// 字体
+$font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+
+// 字号
+$font-size-caption1:  22rpx;
+$font-size-caption2:  24rpx;
+$font-size-footnote:  26rpx;
+$font-size-subhead:   28rpx;
+$font-size-callout:   30rpx;
+$font-size-body:      32rpx;
+$font-size-headline:  34rpx;
+$font-size-title3:    38rpx;
+$font-size-title2:    42rpx;
+$font-size-title1:    52rpx;
+$font-size-largeTitle: 64rpx;
+
+// 字重
+$font-weight-regular:  400;
+$font-weight-medium:   500;
+$font-weight-semibold: 600;
+$font-weight-bold:     700;
+
+// 行高
+$line-height-tight:  1.2;
+$line-height-normal: 1.5;
+$line-height-loose:  1.8;
+
+// 间距 (8pt 网格)
+$space-1:   8rpx;
+$space-2:  16rpx;
+$space-3:  24rpx;
+$space-4:  32rpx;
+$space-5:  40rpx;
+$space-6:  48rpx;
+$space-8:  64rpx;
+$space-10: 80rpx;
+$space-12: 96rpx;
+$page-inset: 32rpx;
+
+// 圆角
+$radius-sm:    8rpx;
+$radius-md:   12rpx;
+$radius-lg:   16rpx;
+$radius-xl:   20rpx;
+$radius-full: 9999rpx;
+
+// 阴影
+$shadow-sm: 0 2rpx 8rpx rgba(0, 0, 0, 0.04), 0 1rpx 2rpx rgba(0, 0, 0, 0.06);
+$shadow-md: 0 4rpx 16rpx rgba(0, 0, 0, 0.06), 0 2rpx 4rpx rgba(0, 0, 0, 0.04);
+$shadow-lg: 0 8rpx 32rpx rgba(0, 0, 0, 0.08), 0 4rpx 8rpx rgba(0, 0, 0, 0.04);
+$shadow-xl: 0 16rpx 48rpx rgba(0, 0, 0, 0.10), 0 8rpx 16rpx rgba(0, 0, 0, 0.04);
+$shadow-glass: 0 2rpx 20rpx rgba(0, 0, 0, 0.06);
+
+// 动画
+$spring-default:    cubic-bezier(0.25, 0.1, 0.25, 1.0);
+$spring-smooth:     cubic-bezier(0.42, 0.0, 0.58, 1.0);
+$spring-bouncy:     cubic-bezier(0.34, 1.56, 0.64, 1.0);
+$spring-decelerate: cubic-bezier(0.0, 0.0, 0.2, 1.0);
+$spring-accelerate: cubic-bezier(0.4, 0.0, 1.0, 1.0);
+$duration-fast:   0.15s;
+$duration-normal: 0.25s;
+$duration-slow:   0.35s;
+$duration-spring: 0.5s;
+
+// 组件尺寸
+$navbar-height:    88rpx;
+$tabbar-height:   100rpx;
+$card-min-height: 160rpx;
+$avatar-sm:        64rpx;
+$avatar-md:        96rpx;
+$avatar-lg:       128rpx;
+$avatar-xl:       160rpx;
+$button-height:    88rpx;
+$input-height:     88rpx;
+$icon-sm:          32rpx;
+$icon-md:          40rpx;
+$icon-lg:          48rpx;
+$map-panel-height: 400rpx;
+
+// Z-index
+$z-base:      1;
+$z-dropdown:  100;
+$z-sticky:    200;
+$z-overlay:   300;
+$z-modal:     400;
+$z-toast:     500;
+$z-tooltip:   600;

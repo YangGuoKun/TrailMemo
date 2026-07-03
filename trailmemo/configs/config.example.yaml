@@ -1,0 +1,106 @@
+# 迹忆旅图 - 配置文件
+# 注意：请将敏感信息（密码、密钥等）替换为实际值
+
+# 服务配置
+server:
+  port: 8080
+  mode: debug  # debug / release
+
+# 日志配置
+log:
+  level: debug              # debug / info / warn / error
+  format: console           # console / json
+  output: stdout            # stdout / file
+  file_path: "./logs/app.log"
+  add_caller: true
+  stacktrace_level: error
+  request:
+    enable_body: false      # 默认不记录请求体，避免泄露密码、token 等敏感信息
+    max_body_size: 2048
+    skip_paths:
+      - /health
+      - /swagger
+    sample_success_rate: 1.0
+  gorm:
+    level: warn             # 生产建议 warn，只记录慢 SQL 和错误 SQL
+    slow_threshold_ms: 500
+    ignore_record_not_found: true
+    parameterized_queries: true
+  audit:
+    enabled: true
+
+# 数据库配置
+database:
+  host: "localhost"
+  port: 3306
+  username: root
+  password: ""  # ⚠️ 请填写数据库密码
+  name: trail_memo_db
+  charset: utf8mb4
+  max_idle_conns: 10
+  max_open_conns: 100
+  loc: "Local" # 时区设置为本地时区
+
+# Redis配置
+redis:
+  host: "localhost"
+  port: 6380
+  password: ""  # 如果没有密码请留空
+  db: 0
+  pool_size: 100
+
+# JWT配置
+jwt:
+  secret: "this_is_a_trailmemo_app_jwt_secret"  # ⚠️ 请填写JWT密钥（至少32位字符）
+  expire_hours: 168  # 7天
+  ignore_gnore_paths:
+    - /api/v1/users/register
+    - /api/v1/users/login
+
+
+# 微信小程序配置
+wechat:
+  appid: ""  # ⚠️ 请填写微信小程序AppID
+  appsecret: ""  # ⚠️ 请填写微信小程序AppSecret
+
+# 文件上传配置
+upload:
+  dir: "./uploads"
+  max_size: 10  # MB
+
+# LLM模型服务配置
+llm:
+  provider: "dashscope"
+  api_key: ""  # 从环境变量 TRAILMEMO_LLM_API_KEY 读取
+  base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  model: "qwen-plus"
+
+# AI Agent 配置
+agent:
+  enabled: true
+  default_mode: "workflow_first"
+  max_steps: 6
+  max_tool_calls: 10
+  max_input_length: 5000
+  request_timeout: "20s"
+  stream_timeout: "60s"
+  llm:
+    provider: ""   # 默认继承 llm.provider，可用 TRAILMEMO_AGENT_LLM_PROVIDER 覆盖
+    api_key: ""    # 默认继承 llm.api_key，可用 TRAILMEMO_AGENT_LLM_API_KEY 覆盖
+    base_url: ""   # 默认继承 llm.base_url，可用 TRAILMEMO_AGENT_LLM_BASE_URL 覆盖
+    model: ""      # 默认继承 llm.model，可用 TRAILMEMO_AGENT_LLM_MODEL 覆盖
+  budget:
+    max_tokens_per_run: 12000
+    max_runs_per_user_per_day: 100
+  approval:
+    require_for_public_action: true
+    require_for_user_write: true
+  cache:
+    recommendation_ttl: "30m"
+    guide_ttl: "12h"
+    session_ttl: "2h"
+
+# 地图服务配置
+map:
+  provider: "amap"  # amap / baidu / google
+  api_key: ""  # 从环境变量 TRAILMEMO_MAP_API_KEY 读取

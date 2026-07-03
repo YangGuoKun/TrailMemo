@@ -1,0 +1,99 @@
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors and local workspace
+.idea/
+.vscode/
+.fleet/
+*.swp
+*.swo
+*.tmp
+*.bak
+
+/doc
+/doc/
+
+# Local agent/tooling state
+.agents/
+.claude/
+.codex/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+trailmemo/configs/config.yaml
+trailmemo/configs/config.local.yaml
+trailmemo/configs/*.local.yaml
+*.pem
+*.key
+*.crt
+
+# Logs
+logs/
+*.log
+trailmemo/logs/
+TrailMemo-app/logs/
+
+# Go build output and cache
+bin/
+build/
+dist/
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.out
+coverage.html
+.gocache/
+
+# Go workspace files
+go.work
+go.work.sum
+
+# Node / UniApp
+node_modules/
+TrailMemo-app/node_modules/
+TrailMemo-app/dist/
+TrailMemo-app/unpackage/
+TrailMemo-app/.hbuilderx/
+TrailMemo-app/.vite/
+TrailMemo-app/.output/
+TrailMemo-app/npm-debug.log*
+TrailMemo-app/yarn-debug.log*
+TrailMemo-app/yarn-error.log*
+TrailMemo-app/pnpm-debug.log*
+
+# Python / RAG experiments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+trailmemo-rag/.venv/
+trailmemo-rag/__pycache__/
+
+# Runtime uploads and generated local data
+trailmemo/uploads/*
+!trailmemo/uploads/.gitkeep
+trailmemo/tmp/
+tmp/
+*.db
+*.sqlite
+*.sqlite3
+
+# Swagger generated backup files
+*.go.*
+
+# Local packaged archives
+*.zip
+*.tar
+*.tar.gz
+*.rar
+

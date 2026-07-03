@@ -1,0 +1,2132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>迹忆旅图 · TrailMemo 原型</title>
+<style>
+/* ============================================================
+   TrailMemo 原型 · iOS 26 液态玻璃 + 鸿蒙 6.1 光感 + ColorOS 16 流体
+   全屏自适应 · localStorage 数据驱动 · 完整交互
+   ============================================================ */
+:root {
+  --glass: rgba(255,255,255,0.50);
+  --glass-strong: rgba(255,255,255,0.72);
+  --glass-light: rgba(255,255,255,0.28);
+  --blur: saturate(170%) blur(24px);
+  --blur-light: saturate(150%) blur(12px);
+  --border: rgba(255,255,255,0.40);
+  --shadow: 0 8px 32px rgba(0,0,0,0.05), 0 2px 8px rgba(0,0,0,0.02);
+
+  --primary: #0DA5BF; --primary-dark: #0A8A9E;
+  --success: #34C759; --warn: #FF9F0A; --error: #FF3B30; --info: #007AFF;
+  --text: #1C1C1E; --text2: #636366; --text3: #AEAEB2;
+  --radius-sm: 10px; --radius: 20px; --radius-lg: 28px; --pill: 9999px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body {
+  width:100%; height:100%; height:100dvh;
+  font-family:'PingFang SC',-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;
+  background:#0D0D0E; display:flex; justify-content:center; align-items:center;
+  -webkit-font-smoothing:antialiased; overflow:hidden;
+}
+
+/* 9:16 手机框（留上下边距） */
+.phone-frame {
+  width:min(98vw, calc((100dvh - 6vh) * 9 / 16));
+  height:min(94vh, 94dvh, calc(98vw * 16 / 9));
+  position:relative; overflow:hidden; border-radius:24px;
+  background: linear-gradient(170deg, #FDF8F4 0%, #F7F4F0 25%, #F3F1F5 55%, #F5F3F8 100%);
+  box-shadow: 0 0 0 2px #1a1a1c, 0 0 0 4px #2a2a2e, 0 24px 80px rgba(0,0,0,0.45);
+  margin: auto;
+}
+
+/* 氛围光 */
+.ambient { position:absolute; border-radius:50%; filter:blur(80px); opacity:0.38; pointer-events:none; z-index:0; }
+.ambient.a1 { width:220px; height:220px; background:radial-gradient(circle,#FFA585,transparent 70%); top:-60px; right:-40px; }
+.ambient.a2 { width:180px; height:180px; background:radial-gradient(circle,#4DD9D5,transparent 70%); bottom:15%; left:-50px; }
+.ambient.a3 { width:150px; height:150px; background:radial-gradient(circle,#C4A6E8,transparent 70%); bottom:5%; right:-30px; }
+
+/* ── 页面容器 ────────────────────────────── */
+.page { position:absolute; inset:0; overflow-y:auto; overflow-x:hidden;
+  opacity:0; pointer-events:none; transition:opacity 0.28s;
+  padding-top:env(safe-area-inset-top); padding-bottom:90px; z-index:1; }
+.page.active { opacity:1; pointer-events:auto; z-index:10; }
+.page::-webkit-scrollbar { display:none; }
+
+/* 导航栏 */
+.navbar {
+  position:sticky; top:0; z-index:50;
+  display:flex; align-items:center; justify-content:center;
+  height:50px; padding:0 16px; padding-top:env(safe-area-inset-top);
+  background:var(--glass-strong); backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur);
+  border-bottom:1px solid var(--border);
+}
+.navbar .back, .navbar .close-btn { position:absolute; left:16px; width:32px; height:32px;
+  border-radius:50%; background:rgba(0,0,0,0.04); display:flex; align-items:center;
+  justify-content:center; font-size:16px; cursor:pointer; color:var(--text); transition:all 0.2s; }
+.navbar .back:active, .navbar .close-btn:active { transform:scale(0.9); background:rgba(0,0,0,0.1); }
+.navbar .title { font-size:17px; font-weight:600; color:var(--text); letter-spacing:-0.2px; }
+.navbar .action { position:absolute; right:16px; font-size:15px; font-weight:600; color:var(--primary); cursor:pointer; padding:6px 12px; transition:all 0.15s; }
+.navbar .action:active { opacity:0.6; }
+
+/* Tab 栏 */
+.tabbar {
+  position:absolute; bottom:0; left:0; right:0; z-index:100;
+  display:flex; height:calc(64px + env(safe-area-inset-bottom,0px));
+  padding:6px 0 env(safe-area-inset-bottom,0px);
+  background:rgba(255,255,255,0.82); backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur);
+  border-top:1px solid rgba(0,0,0,0.06);
+}
+.tab-item { flex:1; display:flex; flex-direction:column; align-items:center;
+  justify-content:center; gap:2px; cursor:pointer; font-size:10px; color:var(--text3);
+  transition:all 0.2s cubic-bezier(0.34,1.56,0.64,1); }
+.tab-item.active { color:var(--primary); }
+.tab-item .tab-icon { font-size:22px; transition:transform 0.25s cubic-bezier(0.34,1.56,0.64,1); }
+.tab-item:active .tab-icon { transform:scale(0.82); }
+
+/* ── 组件 ────────────────────────────────── */
+.card { margin:10px 14px; padding:16px;
+  background:var(--glass); border:1px solid var(--border);
+  border-radius:var(--radius); box-shadow:var(--shadow); }
+
+/* 登录 */
+.login-hero { text-align:center; padding:8vh 30px 4vh; }
+.login-logo { width:80px; height:80px; border-radius:22px;
+  background:linear-gradient(135deg,#0DA5BF,#38C9D2); margin:0 auto 20px;
+  display:flex; align-items:center; justify-content:center; font-size:36px;
+  box-shadow:0 12px 40px rgba(13,165,191,0.25); }
+.login-hero h1 { font-size:28px; font-weight:700; color:var(--text); margin-bottom:6px; }
+.login-hero .slogan { font-size:14px; color:var(--text2); }
+.wechat-btn { margin:0 30px; height:50px; border-radius:var(--radius-sm);
+  background:#07C160; color:#fff; display:flex; align-items:center;
+  justify-content:center; gap:8px; font-size:16px; font-weight:600; cursor:pointer;
+  box-shadow:0 6px 20px rgba(7,193,96,0.25); transition:all 0.2s cubic-bezier(0.34,1.56,0.64,1); }
+.wechat-btn:active { transform:scale(0.96); opacity:0.9; }
+.divider { display:flex; align-items:center; margin:22px 30px; gap:12px; }
+.divider line { flex:1; height:1px; background:rgba(0,0,0,0.06); }
+.divider span { font-size:12px; color:var(--text3); }
+.form-input { margin:0 30px 10px; }
+.form-input input { width:100%; height:48px; border:none; border-radius:var(--radius-sm);
+  background:rgba(0,0,0,0.03); padding:0 16px; font-size:15px; outline:none; transition:all 0.2s; }
+.form-input input:focus { background:rgba(13,165,191,0.06); }
+.primary-btn { margin:10px 30px; height:48px; border-radius:var(--radius-sm);
+  background:var(--primary); color:#fff; border:none; width:calc(100% - 60px);
+  font-size:16px; font-weight:600; cursor:pointer; transition:all 0.2s cubic-bezier(0.34,1.56,0.64,1); position:relative; overflow:hidden; }
+.primary-btn:active { transform:scale(0.96); opacity:0.85; }
+.link-row { text-align:center; font-size:13px; color:var(--info); margin-top:8px; cursor:pointer; }
+
+/* 筛选 */
+.filter-row { display:flex; gap:8px; padding:10px 14px; overflow-x:auto; }
+.filter-row::-webkit-scrollbar { display:none; }
+.filter-pill { padding:7px 16px; border-radius:var(--pill); font-size:13px; font-weight:500;
+  white-space:nowrap; background:rgba(0,0,0,0.04); color:var(--text2); cursor:pointer; transition:all 0.2s; }
+.filter-pill.active { background:var(--primary); color:#fff; font-weight:600; }
+
+/* 路线卡片 */
+.route-card { margin:8px 14px; border-radius:var(--radius); overflow:hidden;
+  background:var(--glass); border:1px solid var(--border); box-shadow:var(--shadow);
+  cursor:pointer; transition:all 0.25s cubic-bezier(0.34,1.56,0.64,1); }
+.route-card:active { transform:scale(0.97); }
+.route-cover { height:130px; position:relative; display:flex; align-items:flex-end; }
+.route-cover .status-tag { position:absolute; top:10px; right:10px;
+  padding:4px 12px; border-radius:var(--pill); font-size:10px; font-weight:600; color:#fff; }
+.route-cover .cover-label { padding:12px 16px; color:#fff; }
+.route-cover .cover-label .rtitle { font-size:18px; font-weight:700; display:block; text-shadow:0 1px 3px rgba(0,0,0,0.2); }
+.route-cover .cover-label .rcities { font-size:12px; opacity:0.85; margin-top:2px; text-shadow:0 1px 2px rgba(0,0,0,0.15); }
+.route-body { padding:12px 16px; display:flex; gap:16px; font-size:11px; color:var(--text2); }
+.route-body span { display:flex; align-items:center; gap:3px; }
+
+/* 浮动按钮 */
+/* 路线列表内联创建卡片 */
+.create-inline-card { margin:12px 14px; padding:20px; text-align:center;
+  border:2px dashed rgba(13,165,191,0.3); border-radius:var(--radius);
+  background:rgba(13,165,191,0.04); cursor:pointer; transition:all 0.2s; }
+.create-inline-card:active { background:rgba(13,165,191,0.10); transform:scale(0.98); }
+.create-inline-card .cic-icon { font-size:36px; margin-bottom:6px; }
+.create-inline-card .cic-text { font-size:14px; font-weight:600; color:var(--primary); }
+
+/* 涟漪 */
+.ripple { position:absolute; border-radius:50%; background:rgba(255,255,255,0.4);
+  transform:scale(0); animation:ripple-anim 0.6s ease-out forwards; pointer-events:none; }
+@keyframes ripple-anim { to { transform:scale(4); opacity:0; } }
+
+/* ── 路线详情 ────────────────────────────── */
+.map-area { position:relative; height:200px; overflow:hidden; cursor:pointer; }
+.map-area iframe { width:100%; height:100%; border:none; }
+.map-area .map-hint { position:absolute; bottom:8px; right:8px; background:rgba(0,0,0,0.5); color:#fff; font-size:10px; padding:3px 8px; border-radius:8px; pointer-events:none; }
+.map-marker { position:absolute; width:12px; height:12px; border-radius:50%;
+  background:var(--primary); cursor:pointer;
+  box-shadow:0 0 0 4px rgba(13,165,191,0.2); animation:pulse 2s infinite; }
+.map-marker.done { background:var(--success); box-shadow:0 0 0 4px rgba(52,199,89,0.2); }
+.map-marker.now { background:var(--warn); width:16px; height:16px;
+  box-shadow:0 0 0 6px rgba(255,159,10,0.25); animation:pulse-now 1.5s infinite; }
+@keyframes pulse { 0%,100%{box-shadow:0 0 0 4px rgba(13,165,191,0.2)} 50%{box-shadow:0 0 0 10px rgba(13,165,191,0.06)} }
+@keyframes pulse-now { 0%,100%{box-shadow:0 0 0 6px rgba(255,159,10,0.25)} 50%{box-shadow:0 0 0 14px rgba(255,159,10,0.06)} }
+
+/* 日期戳 */
+.date-pill { display:inline-flex; align-items:center; gap:8px;
+  margin:14px; padding:10px 18px; background:var(--glass); border:1px solid var(--border);
+  border-radius:var(--pill); box-shadow:var(--shadow); font-size:13px; color:var(--text2); font-weight:500; }
+.date-pill .big { font-size:24px; font-weight:700; color:var(--text); line-height:1; }
+
+/* 心情 */
+.mood-row { display:flex; gap:8px; padding:0 14px; flex-wrap:wrap; margin-bottom:10px; }
+.mood-tag { display:inline-flex; align-items:center; gap:5px;
+  padding:7px 14px; border-radius:var(--pill); font-size:12px; font-weight:600;
+  border:1px solid rgba(255,255,255,0.4); cursor:pointer; transition:all 0.2s cubic-bezier(0.34,1.56,0.64,1); }
+.mood-tag:active { transform:scale(0.9); }
+.mood-tag.sel { transform:scale(1.08); }
+.mood-tag.m-happy { background:rgba(255,159,10,0.16); color:#B86800; }
+.mood-tag.m-excited { background:rgba(255,59,48,0.12); color:#C92016; }
+.mood-tag.m-peace { background:rgba(13,165,191,0.12); color:#076F7E; }
+.mood-tag.m-moved { background:rgba(255,107,138,0.12); color:#C93A58; }
+
+/* 照片墙 */
+.photo-scroll { display:flex; gap:8px; padding:0 14px; overflow-x:auto; margin-bottom:14px; }
+.photo-scroll::-webkit-scrollbar { display:none; }
+.photo-tile { flex-shrink:0; border-radius:var(--radius-sm); overflow:hidden;
+  background:var(--glass-strong); border:1px solid var(--border); box-shadow:var(--shadow);
+  cursor:pointer; transition:transform 0.25s cubic-bezier(0.34,1.56,0.64,1); }
+.photo-tile:active { transform:scale(0.94); }
+.photo-tile.big { width:150px; height:170px; }
+.photo-tile.small { width:95px; height:170px; }
+.photo-tile .ph-inner { width:100%; height:100%; display:flex; align-items:flex-end; padding:10px; }
+.photo-tile .ph-label { color:#fff; font-size:11px; font-weight:600; text-shadow:0 1px 3px rgba(0,0,0,0.3); }
+.photo-tile .ph-img { width:100%; height:100%; object-fit:cover; }
+
+/* 进度 */
+.progress-row { margin:0 14px 10px; padding:14px 18px;
+  background:var(--glass); border:1px solid var(--border); border-radius:var(--radius);
+  box-shadow:var(--shadow); display:flex; align-items:center; gap:14px; }
+.progress-ring { width:56px; height:56px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.progress-ring .inner { width:42px; height:42px; border-radius:50%; background:#fff;
+  display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:var(--text); }
+.progress-text h4 { font-size:14px; font-weight:600; margin-bottom:2px; }
+.progress-text span { font-size:11px; color:var(--text3); }
+
+/* 打卡点 */
+.cp-card { margin:8px 14px; padding:16px;
+  background:var(--glass); border:1px solid var(--border); border-radius:var(--radius);
+  box-shadow:var(--shadow); display:flex; gap:12px; cursor:pointer;
+  transition:all 0.25s cubic-bezier(0.34,1.56,0.64,1); }
+.cp-card:active { transform:scale(0.97); }
+.cp-card.done { background:rgba(52,199,89,0.06); border-color:rgba(52,199,89,0.15); }
+.cp-timeline { display:flex; flex-direction:column; align-items:center; flex-shrink:0; }
+.cp-dot { width:30px; height:30px; border-radius:50%; display:flex; align-items:center;
+  justify-content:center; font-size:11px; font-weight:700;
+  color:#fff; background:var(--primary); box-shadow:0 4px 12px rgba(13,165,191,0.25); }
+.cp-dot.done { background:var(--success); box-shadow:0 4px 12px rgba(52,199,89,0.3); }
+.cp-dot.now { background:var(--warn); box-shadow:0 4px 16px rgba(255,159,10,0.35); }
+.cp-dot.pending { background:rgba(0,0,0,0.06); color:var(--text3); box-shadow:none; }
+.cp-line { width:2px; flex:1; min-height:16px; margin:4px 0;
+  background:linear-gradient(180deg,rgba(13,165,191,0.25),rgba(13,165,191,0.03)); border-radius:1px; }
+.cp-line.done { background:linear-gradient(180deg,rgba(52,199,89,0.35),rgba(52,199,89,0.03)); }
+.cp-info { flex:1; min-width:0; }
+.cp-info .name { font-size:15px; font-weight:600; color:var(--text); margin-bottom:2px; }
+.cp-info .addr { font-size:11px; color:var(--text3); margin-bottom:4px; }
+.cp-info .time { font-size:11px; color:var(--text2); }
+.cp-info .thumb { width:100%; height:80px; border-radius:8px; margin-top:8px; display:flex; align-items:center; justify-content:center; font-size:32px; }
+.cp-info .cp-checkin-photo { width:100%; height:80px; border-radius:8px; margin-top:8px; object-fit:cover; }
+.cp-info .note { margin-top:6px; font-size:12px; color:var(--text2); line-height:1.5; font-style:italic; }
+.cp-info .cp-moods { display:flex; gap:4px; margin-top:6px; font-size:14px; }
+.cp-info .cp-rating { display:flex; gap:2px; margin-top:4px; font-size:14px; }
+
+.checkin-btn { display:inline-flex; align-items:center; gap:4px; margin-top:8px;
+  padding:7px 16px; border-radius:var(--pill); font-size:12px; font-weight:600;
+  background:var(--primary); color:#fff; cursor:pointer; transition:all 0.2s; border:none; }
+.checkin-btn:active { transform:scale(0.93); opacity:0.85; }
+
+/* ── 个人中心 ────────────────────────────── */
+.profile-header { text-align:center; padding:16px 0 4px; }
+.avatar-lg { width:72px; height:72px; border-radius:50%; margin:0 auto 10px;
+  background:linear-gradient(135deg,#E5E5EA,#D1D1D6);
+  display:flex; align-items:center; justify-content:center; font-size:32px; overflow:hidden; }
+.avatar-lg img { width:100%; height:100%; border-radius:50%; object-fit:cover; }
+.profile-name { font-size:20px; font-weight:700; color:var(--text); }
+.profile-id { font-size:12px; color:var(--text3); margin-top:2px; }
+.stat-row { display:flex; justify-content:center; gap:32px; margin:14px 0; }
+.stat-item { text-align:center; cursor:pointer; transition:transform 0.2s; }
+.stat-item:active { transform:scale(0.93); }
+.stat-item .num { font-size:22px; font-weight:700; color:var(--text); }
+.stat-item .label { font-size:11px; color:var(--text3); margin-top:2px; }
+.menu-group { margin:10px 14px; border-radius:var(--radius); overflow:hidden;
+  background:var(--glass); border:1px solid var(--border); box-shadow:var(--shadow); }
+.menu-item { display:flex; align-items:center; justify-content:space-between;
+  padding:14px 18px; cursor:pointer; transition:all 0.15s; border-bottom:1px solid rgba(0,0,0,0.04); }
+.menu-item:last-child { border-bottom:none; }
+.menu-item:active { background:rgba(0,0,0,0.03); }
+.menu-item .m-left { display:flex; align-items:center; gap:10px; }
+.menu-item .m-icon { font-size:18px; }
+.menu-item .m-text { font-size:15px; color:var(--text); }
+.menu-item .m-right { font-size:13px; color:var(--text3); }
+.logout-btn { margin:20px 14px; height:48px; border-radius:var(--radius-sm);
+  background:rgba(255,59,48,0.10); border:1px solid rgba(255,59,48,0.25);
+  color:var(--error); width:calc(100% - 28px);
+  font-size:15px; font-weight:600; cursor:pointer; transition:all 0.2s; }
+.logout-btn:active { background:rgba(255,59,48,0.20); }
+
+/* ── 搜索 ────────────────────────────────── */
+.search-bar { margin:10px 14px; padding:11px 16px; border-radius:var(--pill);
+  background:var(--glass); border:1px solid var(--border);
+  display:flex; align-items:center; gap:8px; color:var(--text3); font-size:14px; cursor:text; }
+.search-bar input { flex:1; border:none; background:transparent; outline:none; font-size:14px; color:var(--text); }
+
+/* ── 表单 ────────────────────────────────── */
+.form-section { margin:0 14px 10px; padding:16px;
+  background:var(--glass); border:1px solid var(--border);
+  border-radius:var(--radius); box-shadow:var(--shadow); }
+.form-section .sec-title { font-size:14px; font-weight:600; color:var(--text); margin-bottom:10px; }
+.form-section input, .form-section textarea {
+  width:100%; border:none; background:rgba(0,0,0,0.03); border-radius:8px;
+  padding:10px 14px; font-size:14px; outline:none; margin-bottom:8px; font-family:inherit; }
+.form-section textarea { height:70px; resize:none; }
+.form-row { display:flex; gap:8px; }
+.form-row input { flex:1; }
+.cp-edit-card { margin:0 14px 8px; padding:14px;
+  background:var(--glass); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); }
+.cp-edit-card .cp-edit-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.cp-edit-card .cp-edit-num { font-size:20px; font-weight:700; color:var(--primary); }
+.cp-edit-card input { width:100%; border:none; background:rgba(0,0,0,0.03);
+  border-radius:8px; padding:10px; font-size:13px; outline:none; margin-bottom:6px; }
+.add-cp { margin:8px 14px; padding:12px; text-align:center;
+  border:1.5px dashed rgba(13,165,191,0.3); border-radius:var(--radius);
+  color:var(--primary); font-size:14px; font-weight:600; cursor:pointer; transition:all 0.2s; }
+.add-cp:active { background:rgba(13,165,191,0.05); }
+
+/* ── 打卡 ────────────────────────────────── */
+.upload-area { margin:0 14px 10px; min-height:180px; border-radius:var(--radius);
+  background:rgba(0,0,0,0.02); border:2px dashed rgba(0,0,0,0.08);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:8px; color:var(--text3); cursor:pointer; transition:all 0.2s; }
+.upload-area:active { background:rgba(13,165,191,0.04); }
+.upload-area.has-photo { border-style:solid; border-color:var(--primary); }
+.upload-area img { max-width:100%; max-height:170px; border-radius:12px; object-fit:cover; }
+.stars { display:flex; gap:4px; }
+.stars .star { font-size:28px; cursor:pointer; transition:all 0.15s cubic-bezier(0.34,1.56,0.64,1); border:none; background:none; padding:0; }
+.stars .star:active { transform:scale(1.2); }
+.stars .star.on { color:var(--warn); }
+.stars .star.off { color:#E5E5EA; }
+
+/* ── 弹层 ────────────────────────────────── */
+.modal-overlay { position:absolute; inset:0; z-index:200;
+  background:rgba(0,0,0,0.32); opacity:0; pointer-events:none;
+  display:flex; align-items:flex-end; transition:opacity 0.3s; }
+.modal-overlay.show { opacity:1; pointer-events:auto; }
+.modal-sheet { width:100%; max-height:88vh; overflow-y:auto;
+  background:rgba(255,255,255,0.93); backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur);
+  border-radius:var(--radius-lg) var(--radius-lg) 0 0;
+  padding:4px 0 calc(16px + env(safe-area-inset-bottom));
+  transform:translateY(30px); transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1); }
+.modal-overlay.show .modal-sheet { transform:translateY(0); }
+.modal-sheet::-webkit-scrollbar { display:none; }
+
+/* Toast */
+.toast { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) scale(0.8);
+  background:rgba(0,0,0,0.78); color:#fff; padding:12px 24px; border-radius:var(--pill);
+  font-size:14px; font-weight:500; z-index:500; opacity:0; pointer-events:none;
+  transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+.toast.show { opacity:1; transform:translate(-50%,-50%) scale(1); }
+
+/* 空状态 */
+.empty-state { text-align:center; padding:50px 30px; }
+.empty-state .empty-icon { font-size:56px; margin-bottom:12px; opacity:0.35; }
+.empty-state .empty-title { font-size:17px; font-weight:600; color:var(--text2); margin-bottom:4px; }
+.empty-state .empty-desc { font-size:13px; color:var(--text3); margin-bottom:16px; line-height:1.6; }
+
+/* 打卡记录网格 */
+.checkin-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; padding:10px 14px; }
+.checkin-grid .ci-card { border-radius:var(--radius); overflow:hidden;
+  background:var(--glass); border:1px solid var(--border); box-shadow:var(--shadow); cursor:pointer; }
+.checkin-grid .ci-card .ci-img { width:100%; height:120px; object-fit:cover; display:block; }
+.checkin-grid .ci-card .ci-img-placeholder { width:100%; height:120px; display:flex; align-items:center; justify-content:center; font-size:40px; }
+.checkin-grid .ci-card .ci-body { padding:10px 12px; }
+.checkin-grid .ci-card .ci-body .ci-route { font-size:10px; color:var(--text3); }
+.checkin-grid .ci-card .ci-body .ci-cp { font-size:14px; font-weight:600; color:var(--text); margin:2px 0; }
+.checkin-grid .ci-card .ci-body .ci-mood { font-size:12px; }
+
+/* 动效细节 */
+.btn-ripple { position:relative; overflow:hidden; }
+.btn-ripple .ripple { position:absolute; border-radius:50%; background:rgba(255,255,255,0.35);
+  transform:scale(0); animation:ripple-anim 0.5s ease-out forwards; pointer-events:none; }
+
+/* ── 社区 Feed (小红书风格) ──────────────── */
+.feed-card { margin:10px 14px; border-radius:var(--radius); overflow:hidden;
+  background:var(--glass); border:1px solid var(--border); box-shadow:var(--shadow);
+  cursor:pointer; transition:all 0.25s cubic-bezier(0.34,1.56,0.64,1); }
+.feed-card:active { transform:scale(0.97); }
+.feed-cover { position:relative; width:100%; }
+.feed-cover-img { width:100%; aspect-ratio:4/3; object-fit:cover; display:block; }
+.feed-cover-placeholder { width:100%; aspect-ratio:4/3; display:flex; align-items:center;
+  justify-content:center; font-size:48px; }
+.feed-cover .feed-overlay { position:absolute; bottom:0; left:0; right:0;
+  padding:40px 14px 12px; background:linear-gradient(transparent,rgba(0,0,0,0.5)); }
+.feed-cover .feed-route-info { color:#fff; font-size:12px; }
+.feed-cover .feed-route-info .fr-title { font-size:17px; font-weight:700; display:block; margin-bottom:2px; text-shadow:0 1px 3px rgba(0,0,0,0.3); }
+.feed-body { padding:12px 14px; }
+.feed-body .feed-author { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.feed-author .fa-avatar { width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,#E5E5EA,#D1D1D6);
+  display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; overflow:hidden; }
+.feed-author .fa-avatar img { width:100%; height:100%; border-radius:50%; object-fit:cover; }
+.feed-author .fa-name { font-size:13px; font-weight:600; color:var(--text); }
+.feed-author .fa-time { font-size:11px; color:var(--text3); margin-left:auto; }
+.feed-body .feed-caption { font-size:14px; color:var(--text); line-height:1.5; margin-bottom:8px; }
+.feed-tags { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
+.feed-tags .feed-tag { padding:3px 10px; border-radius:var(--pill); font-size:10px; font-weight:500;
+  background:rgba(13,165,191,0.08); color:var(--primary); }
+.feed-actions { display:flex; gap:20px; padding-top:6px; border-top:1px solid rgba(0,0,0,0.04); }
+.feed-actions .fa-btn { display:flex; align-items:center; gap:4px; font-size:12px; color:var(--text2);
+  cursor:pointer; transition:all 0.15s; border:none; background:none; padding:4px 0; }
+.feed-actions .fa-btn:active { transform:scale(0.9); }
+.feed-actions .fa-btn.liked { color:#FF3B30; }
+.feed-actions .fa-btn.collected { color:#FF9F0A; }
+
+/* 帖子详情 */
+.post-detail .post-cover { width:100%; aspect-ratio:4/3; object-fit:cover; }
+.post-detail .post-cover-placeholder { width:100%; aspect-ratio:4/3; display:flex; align-items:center; justify-content:center; font-size:64px; }
+.post-detail .post-header { padding:14px; }
+.post-detail .post-title { font-size:20px; font-weight:700; color:var(--text); margin-bottom:4px; }
+.post-detail .post-meta { font-size:12px; color:var(--text3); margin-bottom:8px; }
+.post-detail .post-caption { font-size:15px; color:var(--text); line-height:1.6; margin-bottom:10px; }
+.post-detail .post-route-preview { padding:12px; border-radius:var(--radius-sm);
+  background:rgba(13,165,191,0.05); border:1px solid rgba(13,165,191,0.15);
+  display:flex; align-items:center; gap:10px; margin-bottom:10px; cursor:pointer; }
+.post-detail .post-route-preview:active { opacity:0.7; }
+.post-detail .prp-icon { font-size:28px; }
+.post-detail .prp-info { flex:1; }
+.post-detail .prp-title { font-size:13px; font-weight:600; color:var(--text); }
+.post-detail .prp-meta { font-size:11px; color:var(--text3); }
+
+/* 评论区 */
+.comment-section { padding:0 14px 14px; }
+.comment-section .cmt-title { font-size:15px; font-weight:600; color:var(--text); margin-bottom:10px; }
+.comment-item { display:flex; gap:10px; margin-bottom:12px; }
+.comment-item .cmt-avatar { width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,#E5E5EA,#D1D1D6);
+  display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+.comment-item .cmt-body { flex:1; }
+.comment-item .cmt-name { font-size:13px; font-weight:600; color:var(--text); margin-bottom:2px; }
+.comment-item .cmt-text { font-size:13px; color:var(--text2); line-height:1.4; }
+.comment-item .cmt-time { font-size:10px; color:var(--text3); margin-top:2px; }
+.comment-input-row { display:flex; gap:8px; padding:10px 14px; border-top:1px solid rgba(0,0,0,0.06); }
+.comment-input-row input { flex:1; border:none; background:rgba(0,0,0,0.03); border-radius:var(--pill);
+  padding:10px 16px; font-size:13px; outline:none; }
+.comment-input-row button { padding:8px 16px; border-radius:var(--pill); background:var(--primary);
+  color:#fff; border:none; font-size:13px; font-weight:600; cursor:pointer; }
+
+/* 分享发布页 */
+.share-route-summary { display:flex; gap:10px; padding:14px; align-items:flex-start; }
+.share-route-summary .srs-icon { font-size:32px; flex-shrink:0; }
+.share-route-summary .srs-info { flex:1; }
+.share-route-summary .srs-title { font-size:15px; font-weight:600; color:var(--text); }
+.share-route-summary .srs-meta { font-size:11px; color:var(--text3); margin-top:2px; }
+
+/* ── AI Agent ────────────────────────────── */
+.agent-fab { position:absolute; bottom:calc(96px + env(safe-area-inset-bottom,0px)); left:20px; z-index:60;
+  width:48px; height:48px; border-radius:50%;
+  background:linear-gradient(135deg,#A18CD1,#FBC2EB);
+  color:#fff; display:flex; align-items:center; justify-content:center;
+  font-size:22px; cursor:pointer; box-shadow:0 6px 22px rgba(161,140,209,0.4);
+  transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1); animation:agent-glow 2s ease-in-out infinite; }
+.agent-fab:active { transform:scale(0.86); }
+@keyframes agent-glow { 0%,100%{box-shadow:0 6px 22px rgba(161,140,209,0.4)} 50%{box-shadow:0 6px 34px rgba(161,140,209,0.7)} }
+.agent-chat { display:flex; flex-direction:column; height:75vh; }
+.agent-msgs { flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:10px; }
+.agent-msg { max-width:85%; padding:12px 16px; border-radius:var(--radius-sm); font-size:14px; line-height:1.5; animation:fade-up-enter 0.3s ease-out; }
+@keyframes fade-up-enter { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+.agent-msg.bot { align-self:flex-start; background:var(--glass); border:1px solid var(--border); border-bottom-left-radius:4px; }
+.agent-msg.user { align-self:flex-end; background:var(--primary); color:#fff; border-bottom-right-radius:4px; }
+.agent-msg .am-title { font-weight:600; margin-bottom:4px; display:block; }
+.agent-msg .am-card { margin-top:8px; padding:10px; border-radius:8px; background:rgba(255,255,255,0.6); cursor:pointer; transition:all 0.2s; }
+.agent-msg .am-card:active { transform:scale(0.97); }
+.agent-input-row { display:flex; gap:8px; padding:10px 14px; border-top:1px solid rgba(0,0,0,0.06); }
+.agent-input-row input { flex:1; border:none; background:rgba(0,0,0,0.04); border-radius:var(--pill); padding:10px 16px; font-size:14px; outline:none; }
+.agent-input-row button { width:44px; height:44px; border-radius:50%; background:linear-gradient(135deg,#A18CD1,#FBC2EB); color:#fff; border:none; font-size:18px; cursor:pointer; }
+.agent-suggestions { display:flex; gap:6px; flex-wrap:wrap; padding:8px 14px; }
+.agent-suggestions .as-chip { padding:6px 14px; border-radius:var(--pill); font-size:12px;
+  background:rgba(161,140,209,0.1); color:#7B5EA7; cursor:pointer; border:1px solid rgba(161,140,209,0.2); white-space:nowrap; }
+.agent-suggestions .as-chip:active { background:rgba(161,140,209,0.25); }
+
+/* ── 地图增强（更大） ────────────────────── */
+.map-area-lg { position:relative; height:320px; overflow:hidden; cursor:pointer; }
+.map-area-lg .map-marker-lg { position:absolute; width:36px; height:36px; border-radius:50%;
+  background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center;
+  font-size:13px; font-weight:700; cursor:pointer; z-index:5;
+  box-shadow:0 4px 12px rgba(13,165,191,0.3); transition:all 0.2s cubic-bezier(0.34,1.56,0.64,1); }
+.map-area-lg .map-marker-lg:active { transform:scale(1.3); }
+.map-area-lg .map-marker-lg.done { background:var(--success); box-shadow:0 4px 12px rgba(52,199,89,0.35); }
+.map-area-lg .map-marker-lg.now { background:var(--warn); box-shadow:0 4px 16px rgba(255,159,10,0.4); animation:pulse-now 1.5s infinite; }
+.map-area-lg .map-connector { position:absolute; height:3px; background:rgba(13,165,191,0.3); z-index:2; transform-origin:left center; border-radius:2px; }
+.map-area-lg .map-connector.done { background:rgba(52,199,89,0.4); }
+.map-area-lg .map-hint { position:absolute; bottom:8px; right:8px; background:rgba(0,0,0,0.45); color:#fff; font-size:10px; padding:3px 8px; border-radius:8px; pointer-events:none; z-index:10; }
+
+/* ── 打卡点拖动排序 ──────────────────────── */
+.cp-edit-card.dragging { opacity:0.5; transform:scale(0.95); border:2px dashed var(--primary); }
+.cp-edit-card.drag-over { border-color:var(--primary); background:rgba(13,165,191,0.06); }
+.cp-edit-card .drag-handle { cursor:grab; display:flex; align-items:center; gap:4px; font-size:18px; color:var(--text3); user-select:none; }
+.cp-edit-card .drag-handle:active { cursor:grabbing; }
+
+/* ── 用户主页 ────────────────────────────── */
+.user-profile-header { text-align:center; padding:24px 20px 12px; }
+.user-profile-header .uph-avatar { width:80px; height:80px; border-radius:50%; margin:0 auto 12px;
+  background:linear-gradient(135deg,#E5E5EA,#D1D1D6); overflow:hidden;
+  display:flex; align-items:center; justify-content:center; font-size:40px; }
+.user-profile-header .uph-avatar img { width:100%; height:100%; border-radius:50%; object-fit:cover; }
+.user-profile-header .uph-name { font-size:22px; font-weight:700; color:var(--text); margin-bottom:4px; }
+.user-profile-header .uph-id { font-size:12px; color:var(--text3); }
+.user-profile-header .uph-bio { margin-top:8px; font-size:14px; color:var(--text2); line-height:1.5; padding:0 20px; }
+.user-profile-header .uph-stats { display:flex; justify-content:center; gap:28px; margin-top:14px; }
+.user-profile-header .uph-stats .stat-item { text-align:center; cursor:pointer; }
+.user-profile-header .uph-stats .stat-num { font-size:20px; font-weight:700; color:var(--text); }
+.user-profile-header .uph-stats .stat-label { font-size:11px; color:var(--text3); margin-top:2px; }
+.uph-section-title { font-size:15px; font-weight:600; color:var(--text); margin:16px 14px 8px; }
+
+/* 用户主页选项卡 */
+.uph-tabs { display:flex; border-bottom:1px solid rgba(0,0,0,0.06); margin:0 14px; }
+.uph-tab { flex:1; text-align:center; padding:12px 0; font-size:14px; font-weight:500;
+  color:var(--text2); cursor:pointer; position:relative; transition:all 0.2s; }
+.uph-tab.active { color:var(--text); font-weight:600; }
+.uph-tab.active::after { content:''; position:absolute; bottom:0; left:50%; transform:translateX(-50%);
+  width:28px; height:3px; background:var(--primary); border-radius:2px; }
+.uph-tab-content { display:none; }
+.uph-tab-content.active { display:block; }
+</style>
+</head>
+<body>
+
+<div class="phone-frame">
+
+<!-- 氛围光 -->
+<div class="ambient a1"></div><div class="ambient a2"></div><div class="ambient a3"></div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- ================================================================ -->
+<!-- 登录页 -->
+<!-- ================================================================ -->
+<div class="page active" id="page-login">
+  <div class="login-hero">
+    <div class="login-logo">🗺️</div>
+    <h1>迹忆旅图</h1>
+    <div class="slogan">记录每一段旅途的足迹与回忆</div>
+  </div>
+  <div class="wechat-btn" id="btn-wechat-login"><span style="font-size:20px">💬</span> 微信一键登录</div>
+  <div class="divider"><line></line><span>或</span><line></line></div>
+  <div class="form-input"><input id="loginUser" type="text" placeholder="用户名/手机号/邮箱"></div>
+  <div class="form-input"><input id="loginPass" type="password" placeholder="密码"></div>
+  <button class="primary-btn btn-ripple" id="btn-login">登录</button>
+  <div class="link-row" id="link-register">还没有账号？立即注册</div>
+  <!-- 注册表单 -->
+  <div id="registerForm" style="display:none">
+    <div class="divider"><line></line><span>注册</span><line></line></div>
+    <div class="form-input"><input id="regUser" type="text" placeholder="用户名 (3-64位)"></div>
+    <div class="form-input"><input id="regPass" type="password" placeholder="密码 (至少6位)"></div>
+    <div class="form-input"><input id="regPass2" type="password" placeholder="确认密码"></div>
+    <div class="form-input"><input id="regPhone" type="text" placeholder="手机号 (选填)"></div>
+    <button class="primary-btn btn-ripple" id="btn-register">注册</button>
+    <div class="link-row" id="link-back-login">已有账号？返回登录</div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- 发现页 -->
+<!-- ================================================================ -->
+<div class="page" id="page-discover">
+  <div class="navbar"><div class="title">发现</div></div>
+  <div class="search-bar"><span>🔍</span><input id="searchInput" type="text" placeholder="搜索路线、目的地..."></div>
+  <div style="margin:0 14px;height:110px;border-radius:var(--radius);overflow:hidden;
+    background:linear-gradient(135deg,#FFB88C,#FF9A76);display:flex;align-items:center;padding:20px;">
+    <div style="color:#fff"><div style="font-size:20px;font-weight:700">探索新的旅程</div><div style="font-size:12px;opacity:0.8;margin-top:4px">发现他人分享的精彩路线</div></div>
+  </div>
+  <div style="font-size:15px;font-weight:600;color:var(--text);margin:16px 14px 8px">🔥 热门推荐</div>
+  <div id="discover-list"></div>
+</div>
+
+<!-- ================================================================ -->
+<!-- 路线列表页 -->
+<!-- ================================================================ -->
+<div class="page" id="page-routes">
+  <div class="navbar"><div class="title">我的路线</div><div class="action" id="btn-create-from-list">+ 创建</div></div>
+  <div class="filter-row" id="filter-row">
+    <div class="filter-pill active" data-filter="all">全部</div>
+    <div class="filter-pill" data-filter="in_progress">进行中</div>
+    <div class="filter-pill" data-filter="completed">已完成</div>
+    <div class="filter-pill" data-filter="draft">草稿</div>
+  </div>
+  <div id="route-list"></div>
+</div>
+
+<!-- ================================================================ -->
+<!-- 路线详情页 -->
+<!-- ================================================================ -->
+<div class="page" id="page-detail">
+  <div class="navbar">
+    <div class="back" id="btn-close-detail">←</div>
+    <div class="title" id="detail-title">路线详情</div>
+  </div>
+  <div class="map-area" id="map-area">
+    <div style="width:100%;height:100%;background:
+      radial-gradient(circle at 28% 38%,rgba(13,165,191,0.08),transparent 40%),
+      radial-gradient(circle at 65% 50%,rgba(255,154,118,0.12),transparent 40%),
+      linear-gradient(0deg,transparent 48px,rgba(13,165,191,0.04) 49px),
+      linear-gradient(90deg,transparent 48px,rgba(13,165,191,0.03) 49px);"></div>
+    <div class="map-hint">地图示意 · 实际使用微信地图</div>
+  </div>
+  <div id="detail-content"></div>
+  <div style="display:flex;gap:8px;padding:0 14px 20px" id="detail-actions"></div>
+</div>
+
+<!-- ================================================================ -->
+<!-- 帖子详情页 -->
+<!-- ================================================================ -->
+<div class="page" id="page-post-detail">
+  <div class="navbar">
+    <div class="back" id="btn-close-post-detail">←</div>
+    <div class="title">帖子详情</div>
+  </div>
+  <div id="post-detail-content" class="post-detail"></div>
+  <div style="margin:10px 14px" id="post-detail-actions"></div>
+  <div class="comment-section" id="post-comments"></div>
+  <div class="comment-input-row">
+    <input id="comment-input" type="text" placeholder="写下你的评论...">
+    <button id="btn-send-comment">发送</button>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- 用户主页（查看他人/自己） -->
+<!-- ================================================================ -->
+<div class="page" id="page-user-profile">
+  <div class="navbar">
+    <div class="back" id="btn-close-user-profile">←</div>
+    <div class="title">用户主页</div>
+  </div>
+  <div id="user-profile-content"></div>
+</div>
+
+<!-- ================================================================ -->
+<!-- 个人中心 -->
+<!-- ================================================================ -->
+<div class="page" id="page-profile">
+  <div class="navbar"><div class="title">我的</div><div class="action" id="btn-settings">设置</div></div>
+  <div id="profile-content"></div>
+</div>
+
+<!-- ================================================================ -->
+<!-- 悬浮按钮组（phone-frame 层级，不随页面滚动） -->
+<!-- ================================================================ -->
+<div class="agent-fab btn-ripple" id="agent-fab" title="AI 旅行助手">✨</div>
+
+<!-- ================================================================ -->
+<!-- Tab 栏 -->
+<!-- ================================================================ -->
+<div class="tabbar">
+  <div class="tab-item active" data-tab="discover"><span class="tab-icon">🧭</span>发现</div>
+  <div class="tab-item" data-tab="routes"><span class="tab-icon">📍</span>路线</div>
+  <div class="tab-item" data-tab="profile"><span class="tab-icon">👤</span>我的</div>
+</div>
+
+<!-- ================================================================ -->
+<!-- 弹层: AI 旅行助手 -->
+<!-- ================================================================ -->
+<div class="modal-overlay" id="modal-agent">
+  <div class="modal-sheet">
+    <div class="navbar" style="background:transparent;backdrop-filter:none;border:none">
+      <div class="close-btn" data-close="modal-agent">←</div>
+      <div class="title">🤖 AI 旅行助手</div>
+    </div>
+    <div class="agent-suggestions" id="agent-suggestions">
+      <div class="as-chip" data-q="推荐适合夏天去的旅行路线">🏖️ 夏天去哪玩</div>
+      <div class="as-chip" data-q="帮我规划一个三天两夜的成都美食之旅">🍜 成都美食</div>
+      <div class="as-chip" data-q="有什么适合情侣出游的浪漫路线">💕 情侣出游</div>
+      <div class="as-chip" data-q="生成杭州三日游攻略">📝 杭州攻略</div>
+    </div>
+    <div class="agent-chat">
+      <div class="agent-msgs" id="agent-msgs">
+        <div class="agent-msg bot">你好！我是你的 AI 旅行助手 ✨<br>可以帮你：<br>· 根据偏好推荐旅行路线<br>· 生成城市旅游攻略<br>· 规划行程方案<br><br>直接告诉我你的需求，或者点击上方快捷提问~</div>
+      </div>
+      <div class="agent-input-row">
+        <input id="agent-input" type="text" placeholder="描述你的旅行需求...">
+        <button id="btn-agent-send">➤</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- 弹层: 创建/编辑路线 -->
+<!-- ================================================================ -->
+<div class="modal-overlay" id="modal-create">
+  <div class="modal-sheet">
+    <div class="navbar" style="background:transparent;backdrop-filter:none;border:none">
+      <div class="close-btn" data-close="modal-create">←</div>
+      <div class="title" id="modal-create-title">创建路线</div>
+      <div class="action" id="btn-save-route">保存</div>
+    </div>
+    <div id="create-form"></div>
+    <button class="primary-btn btn-ripple" id="btn-submit-route">保存路线</button>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- 弹层: 分享路线到社区 -->
+<!-- ================================================================ -->
+<div class="modal-overlay" id="modal-share">
+  <div class="modal-sheet">
+    <div class="navbar" style="background:transparent;backdrop-filter:none;border:none">
+      <div class="close-btn" data-close="modal-share">←</div>
+      <div class="title">分享到社区</div>
+      <div class="action" id="btn-publish-share">发布</div>
+    </div>
+    <div id="share-form-content"></div>
+    <button class="primary-btn btn-ripple" id="btn-do-share">发布分享</button>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- 弹层: 发布打卡 -->
+<!-- ================================================================ -->
+<div class="modal-overlay" id="modal-checkin">
+  <div class="modal-sheet">
+    <div class="navbar" style="background:transparent;backdrop-filter:none;border:none">
+      <div class="close-btn" data-close="modal-checkin">←</div>
+      <div class="title" id="checkin-title">发布打卡</div>
+      <div class="action" id="btn-submit-checkin">发布</div>
+    </div>
+    <div id="checkin-form-content"></div>
+    <button class="primary-btn btn-ripple" id="btn-do-checkin">发布打卡</button>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- 弹层: 编辑资料 -->
+<!-- ================================================================ -->
+<div class="modal-overlay" id="modal-profile-edit">
+  <div class="modal-sheet">
+    <div class="navbar" style="background:transparent;backdrop-filter:none;border:none">
+      <div class="close-btn" data-close="modal-profile-edit">←</div><div class="title">编辑资料</div>
+      <div class="action" id="btn-save-profile">保存</div>
+    </div>
+    <div style="text-align:center;padding:14px">
+      <div class="avatar-lg" id="edit-avatar" style="margin:0 auto;cursor:pointer">🧑</div>
+      <div style="font-size:11px;color:var(--info);margin-top:6px;cursor:pointer" id="btn-change-avatar">点击更换头像</div>
+    </div>
+    <div class="card"><input id="editNickname" placeholder="昵称" style="width:100%;border:none;background:transparent;outline:none;font-size:14px"></div>
+    <div class="card"><textarea id="editBio" placeholder="个人签名（选填）" style="width:100%;border:none;background:transparent;outline:none;font-size:14px;height:60px;resize:none;font-family:inherit"></textarea></div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:14px"><span style="color:var(--text2)">用户名</span><span id="editUsername">-</span></div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:14px"><span style="color:var(--text2)">手机号</span><span id="editPhone">未绑定</span></div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:14px"><span style="color:var(--text2)">注册时间</span><span id="editRegTime">-</span></div>
+    </div>
+    <button class="primary-btn btn-ripple" id="btn-do-save-profile">保存修改</button>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- 弹层: 修改密码 -->
+<!-- ================================================================ -->
+<div class="modal-overlay" id="modal-password">
+  <div class="modal-sheet">
+    <div class="navbar" style="background:transparent;backdrop-filter:none;border:none">
+      <div class="close-btn" data-close="modal-password">←</div><div class="title">修改密码</div>
+    </div>
+    <div class="card"><input id="oldPass" type="password" placeholder="旧密码" style="width:100%;border:none;background:transparent;outline:none;font-size:14px"></div>
+    <div class="card"><input id="newPass" type="password" placeholder="新密码 (至少6位)" style="width:100%;border:none;background:transparent;outline:none;font-size:14px"></div>
+    <div class="card"><input id="newPass2" type="password" placeholder="确认新密码" style="width:100%;border:none;background:transparent;outline:none;font-size:14px"></div>
+    <div style="margin:0 14px;padding:12px;background:rgba(255,159,10,0.08);border-radius:var(--radius);font-size:11px;color:var(--text2)">
+      <div style="font-weight:600;color:var(--warn);margin-bottom:4px">安全提示</div>· 密码长度至少 6 位 · 建议使用字母、数字和符号的组合</div>
+    <button class="primary-btn btn-ripple" id="btn-do-change-password">确认修改</button>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- 弹层: 设置 -->
+<!-- ================================================================ -->
+<div class="modal-overlay" id="modal-settings">
+  <div class="modal-sheet">
+    <div class="navbar" style="background:transparent;backdrop-filter:none;border:none">
+      <div class="close-btn" data-close="modal-settings">←</div><div class="title">设置</div>
+    </div>
+    <div class="menu-group"><div class="menu-item"><div class="m-left"><span class="m-text">清除缓存</span></div><span class="m-right">0 KB</span></div>
+    <div class="menu-item"><div class="m-left"><span class="m-text">当前版本</span></div><span class="m-right">v1.0.0</span></div></div>
+    <div class="menu-group"><div class="menu-item"><div class="m-left"><span class="m-text">用户协议</span></div><span class="m-right">→</span></div>
+    <div class="menu-item"><div class="m-left"><span class="m-text">隐私政策</span></div><span class="m-right">→</span></div></div>
+    <div class="logout-btn" id="btn-logout-settings">退出登录</div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- 弹层: 我的打卡 -->
+<!-- ================================================================ -->
+<div class="modal-overlay" id="modal-my-checkins">
+  <div class="modal-sheet">
+    <div class="navbar" style="background:transparent;backdrop-filter:none;border:none">
+      <div class="close-btn" data-close="modal-my-checkins">←</div><div class="title">我的打卡</div>
+    </div>
+    <div id="my-checkins-content"></div>
+  </div>
+</div>
+
+
+<script>
+/* ================================================================
+   TrailMemo 数据层 & 控制器
+   ================================================================ */
+
+// ── 数据存储 ────────────────────────────────
+const Store = (() => {
+  const KEY_USER = 'tm_user';
+  const KEY_ROUTES = 'tm_routes';
+  const KEY_POSTS = 'tm_posts';
+
+  /** 初始化种子数据 */
+  function seedIfEmpty() {
+    if (!localStorage.getItem(KEY_POSTS)) {
+      const seedPosts = [
+        { id:1001, routeId:1, authorName:'旅行者小杨', authorAvatar:'', title:'成都三日美食之旅·完结分享 🎉',
+          caption:'三天时间吃遍成都！从清晨的茶馆到深夜的小吃摊，每一站都是舌尖上的惊喜。宽窄巷子的茉莉花茶、锦里的三大炮、春熙路的火锅...这条路线真的绝了，分享给想去成都的朋友们！', coverPhoto:'',
+          tags:['成都','美食','三日游'], likes:128, collected:false, liked:false, commentCount:3,
+          createdAt:'2026-05-20 15:30', comments:[
+            {id:2001, author:'旅行达人小明', text:'太棒了！收藏了，下周就去成都！', time:'05-21 10:20'},
+            {id:2002, author:'吃货一枚', text:'春熙路那家火锅叫什么名字呀？', time:'05-21 12:05'},
+            {id:2003, author:'旅行者小杨', text:'叫蜀大侠，人均80，超值！', time:'05-21 12:30', isReply:true},
+          ]},
+        { id:1002, routeId:2, authorName:'西湖漫步者', authorAvatar:'', title:'环西湖经典路线分享｜每一步都是风景',
+          caption:'环湖一圈，断桥残雪的晨雾、苏堤春晓的杨柳、雷峰塔的落日...杭州的美需要慢下来感受。附上我的打卡路线，可以直接复用哦~', coverPhoto:'',
+          tags:['杭州','西湖','一日游','徒步'], likes:86, collected:false, liked:true, commentCount:1,
+          createdAt:'2026-05-18 09:15', comments:[
+            {id:2004, author:'新杭州人', text:'苏堤那段真的要走一走，太美了', time:'05-18 14:00'},
+          ]},
+      ];
+      localStorage.setItem(KEY_POSTS, JSON.stringify(seedPosts));
+    }
+    if (!localStorage.getItem(KEY_ROUTES)) {
+      const seed = [
+        { id:1, title:'成都三日美食之旅', description:'一次以吃为主题的成都深度游', cover:'grad1', startCity:'成都', endCity:'成都', distance:120, hours:48, status:'in_progress', checkpoints:[
+          { id:101, name:'宽窄巷子', address:'成都市青羊区宽窄巷子', lat:30.6562, lng:104.0657, arriveTime:'09:30', stay:120, checked:true, checkin:{ photo:'', content:'清晨的青石板路映着晨光，茶馆飘出茉莉花香', mood:['happy','peace'], rating:5 } },
+          { id:102, name:'锦里', address:'成都市武侯区锦里古街', lat:30.6432, lng:104.0472, arriveTime:'12:00', stay:90, checked:true, checkin:{ photo:'', content:'红灯笼下飘来三大炮的甜香', mood:['excited'], rating:4 } },
+          { id:103, name:'春熙路', address:'成都市锦江区春熙路', lat:30.6575, lng:104.0805, arriveTime:'15:00', stay:120, checked:false, checkin:null },
+          { id:104, name:'太古里', address:'成都市锦江区太古里', lat:30.6513, lng:104.0888, arriveTime:'10:00', stay:90, checked:false, checkin:null },
+          { id:105, name:'九眼桥', address:'成都市武侯区九眼桥', lat:30.6465, lng:104.0912, arriveTime:'18:00', stay:60, checked:false, checkin:null }
+        ]},
+        { id:2, title:'杭州西湖环湖路线', description:'环西湖经典路线，打卡湖畔美景', cover:'grad2', startCity:'杭州', endCity:'杭州', distance:45, hours:24, status:'completed', checkpoints:[
+          { id:201, name:'断桥残雪', address:'杭州市西湖区北山路', lat:30.2590, lng:120.1506, arriveTime:'08:00', stay:60, checked:true, checkin:{ photo:'', content:'晨曦中的断桥特别宁静', mood:['peace'], rating:5 } },
+          { id:202, name:'苏堤春晓', address:'杭州市西湖区苏堤', lat:30.2440, lng:120.1434, arriveTime:'10:00', stay:120, checked:true, checkin:{ photo:'', content:'漫步苏堤，杨柳依依', mood:['happy','peace'], rating:5 } },
+          { id:203, name:'雷峰塔', address:'杭州市西湖区南山路', lat:30.2345, lng:120.1520, arriveTime:'14:00', stay:90, checked:true, checkin:{ photo:'', content:'登塔远眺西湖全景', mood:['excited'], rating:4 } },
+        ]},
+        { id:3, title:'北京胡同深度游', description:'探寻老北京胡同文化', cover:'grad3', startCity:'北京', endCity:'北京', distance:30, hours:36, status:'draft', checkpoints:[
+          { id:301, name:'南锣鼓巷', address:'北京市东城区南锣鼓巷', lat:39.9375, lng:116.4025, arriveTime:'09:00', stay:120, checked:false, checkin:null },
+          { id:302, name:'什刹海', address:'北京市西城区什刹海', lat:39.9370, lng:116.3850, arriveTime:'14:00', stay:180, checked:false, checkin:null },
+        ]}
+      ];
+      localStorage.setItem(KEY_ROUTES, JSON.stringify(seed));
+    }
+    if (!localStorage.getItem(KEY_USER)) {
+      const user = { username:'trailmemo_yang', nickname:'旅行者小杨', phone:'', email:'', avatar:'', bio:'热爱旅行的程序员，用脚步丈量世界。🧳', createdAt:'2026-03-15', password:'123456' };
+      localStorage.setItem(KEY_USER, JSON.stringify(user));
+    }
+  }
+
+  function getUser() { return JSON.parse(localStorage.getItem(KEY_USER) || 'null'); }
+  function saveUser(u) { localStorage.setItem(KEY_USER, JSON.stringify(u)); }
+
+  function getRoutes() { return JSON.parse(localStorage.getItem(KEY_ROUTES) || '[]'); }
+  function saveRoutes(r) { localStorage.setItem(KEY_ROUTES, JSON.stringify(r)); }
+  function getPosts() { return JSON.parse(localStorage.getItem(KEY_POSTS) || '[]'); }
+  function savePosts(p) { localStorage.setItem(KEY_POSTS, JSON.stringify(p)); }
+
+  seedIfEmpty();
+
+  return { getUser, saveUser, getRoutes, saveRoutes, getPosts, savePosts, _reSeed: seedIfEmpty, KEY_USER, KEY_ROUTES, KEY_POSTS };
+})();
+
+// ── 应用程序状态 ────────────────────────────
+let isLoggedIn = false;
+let currentTab = 'login';
+let pendingTab = null;
+let currentDetailRouteId = null;
+let editingRouteId = null;
+let checkinTarget = null; // { routeId, checkpointId, cpName }
+let currentFilter = 'all';
+let currentPostId = null;    // 社区帖子详情
+let shareRouteId = null;     // 要分享的路线ID
+let currentViewUser = null;  // 正在查看的用户名
+
+// ── Toast ────────────────────────────────────
+function showToast(msg, ms = 1500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._tid); t._tid = setTimeout(() => t.classList.remove('show'), ms);
+}
+
+// ── 涟漪效果 ────────────────────────────────
+function addRipple(e) {
+  const btn = e.currentTarget;
+  const rect = btn.getBoundingClientRect();
+  const size = Math.max(rect.width, rect.height) * 2;
+  const ripple = document.createElement('span');
+  ripple.className = 'ripple';
+  ripple.style.width = ripple.style.height = size + 'px';
+  ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
+  ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
+  btn.appendChild(ripple);
+  ripple.addEventListener('animationend', () => ripple.remove());
+}
+
+// ── 弹层管理 ────────────────────────────────
+function showModal(id) { document.getElementById(id).classList.add('show'); }
+function hideModal(id) { document.getElementById(id).classList.remove('show'); }
+
+// ── 页面切换 ────────────────────────────────
+function switchTab(name, force = false) {
+  if (!isLoggedIn && name !== 'login' && name !== 'discover') {
+    pendingTab = name; switchTab('login'); return;
+  }
+  if (!isLoggedIn && name === 'routes') { switchTab('login'); return; }
+  if (!isLoggedIn && name === 'profile') { switchTab('login'); return; }
+
+  currentTab = name;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const map = { discover:'page-discover', routes:'page-routes', profile:'page-profile', login:'page-login' };
+  const target = map[name];
+  if (target) document.getElementById(target).classList.add('active');
+
+  // Tab 高亮
+  const tabs = document.querySelectorAll('.tab-item');
+  tabs.forEach(t => t.classList.remove('active'));
+  const idx = { discover:0, routes:1, profile:2 };
+  if (name !== 'login' && idx[name] !== undefined) tabs[idx[name]].classList.add('active');
+
+  // 隐藏子页面
+  document.getElementById('page-detail').classList.remove('active');
+  document.getElementById('page-post-detail').classList.remove('active');
+  document.getElementById('page-user-profile').classList.remove('active');
+  currentPostId = null;
+  currentViewUser = null;
+
+  // 刷新内容
+  if (name === 'routes') renderRouteList();
+  if (name === 'discover') renderDiscover();
+  if (name === 'profile') renderProfile();
+  if (name === 'login') { pendingTab = null; }
+  updateFabs();
+}
+
+function openRouteDetail(routeId) {
+  currentDetailRouteId = routeId;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-detail').classList.add('active');
+  renderRouteDetail(routeId);
+  updateFabs();
+}
+
+function closeDetail() {
+  document.getElementById('page-detail').classList.remove('active');
+  currentDetailRouteId = null;
+  document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+  const idx = { discover:0, routes:1, profile:2 };
+  if (currentTab !== 'login' && idx[currentTab] !== undefined) {
+    document.querySelectorAll('.tab-item')[idx[currentTab]].classList.add('active');
+  }
+  switchTab(currentTab, true);
+  updateFabs();
+}
+
+// ── 登录/注册 ────────────────────────────────
+function doLogin() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value.trim();
+  if (!u || !p) { showToast('请填写用户名和密码'); return; }
+  const user = Store.getUser();
+  // 支持用户名/手机号/邮箱登录
+  const match = (user.username === u || user.phone === u || user.email === u);
+  if (!match || user.password !== p) { showToast('用户名或密码错误'); return; }
+  isLoggedIn = true;
+  showToast('登录成功');
+  if (pendingTab) { const pt = pendingTab; pendingTab = null; switchTab(pt); }
+  else switchTab('discover');
+}
+
+function doRegister() {
+  const username = document.getElementById('regUser').value.trim();
+  const password = document.getElementById('regPass').value;
+  const password2 = document.getElementById('regPass2').value;
+  const phone = document.getElementById('regPhone').value.trim();
+  if (!username || !password) { showToast('请填写用户名和密码'); return; }
+  if (username.length < 3) { showToast('用户名至少3位'); return; }
+  if (password.length < 6) { showToast('密码至少6位'); return; }
+  if (password !== password2) { showToast('两次密码不一致'); return; }
+  // 手机号自动补 +86
+  let finalPhone = phone || '';
+  if (finalPhone && /^\d{11}$/.test(finalPhone)) finalPhone = '+86' + finalPhone;
+  const user = { username, nickname:username, phone:finalPhone, email:'', avatar:'', bio:'', createdAt:new Date().toISOString().split('T')[0], password };
+  Store.saveUser(user);
+  showToast('注册成功！');
+  isLoggedIn = true;
+  if (pendingTab) { const pt = pendingTab; pendingTab = null; switchTab(pt); }
+  else switchTab('discover');
+}
+
+function doLogout() {
+  isLoggedIn = false;
+  currentDetailRouteId = null;
+  editingRouteId = null;
+  checkinTarget = null;
+  localStorage.removeItem(Store.KEY_ROUTES);
+  localStorage.removeItem('tm_posts');
+  // 刷新种子数据
+  Store._reSeed();
+  hideModal('modal-settings');
+  hideModal('modal-my-checkins');
+  switchTab('login');
+  showToast('已退出登录');
+}
+
+// ── 路线列表渲染 ────────────────────────────
+function renderRouteList(filter = currentFilter) {
+  currentFilter = filter;
+  const container = document.getElementById('route-list');
+  const routes = Store.getRoutes();
+  let filtered = routes;
+  if (filter === 'in_progress') filtered = routes.filter(r => r.status === 'in_progress');
+  else if (filter === 'completed') filtered = routes.filter(r => r.status === 'completed');
+  else if (filter === 'draft') filtered = routes.filter(r => r.status === 'draft');
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">🗺️</div><div class="empty-title">还没有路线</div><div class="empty-desc">开始规划你的第一条旅行路线吧</div><button class="primary-btn" style="width:auto;padding:0 32px;margin:0 auto" id="btn-empty-create">创建路线</button></div>`;
+    document.getElementById('btn-empty-create')?.addEventListener('click', () => openCreateModal());
+    return;
+  }
+
+  const coverGradients = {
+    grad1: 'linear-gradient(135deg,#FFD4C0,#FFB88C,#FECF9E)',
+    grad2: 'linear-gradient(135deg,#89D4CF,#4DCADC,#0DA5BF)',
+    grad3: 'linear-gradient(135deg,#C4A6E8,#A18CD1,#FBC2EB)',
+  };
+  const statusLabel = { draft:'草稿', in_progress:'进行中', completed:'已完成' };
+  const statusColor = { draft:'#8E8E93', in_progress:'#0DA5BF', completed:'#34C759' };
+
+  // 内联创建卡片（列表顶部）
+  const inlineCreate = `<div class="create-inline-card" id="inline-create"><div class="cic-icon">＋</div><div class="cic-text">创建新路线</div></div>`;
+
+  container.innerHTML = inlineCreate + filtered.map((r, i) => {
+    const cIdx = ['grad1','grad2','grad3'][i % 3];
+    const done = r.checkpoints.filter(c => c.checked).length;
+    const total = r.checkpoints.length;
+    return `
+      <div class="route-card" data-route-id="${r.id}">
+        <div class="route-cover" style="background:${coverGradients[cIdx]}">
+          <div class="status-tag" style="background:${statusColor[r.status]}">${statusLabel[r.status]}</div>
+          <div class="cover-label"><span class="rtitle">${r.title}</span><span class="rcities">${r.startCity} → ${r.endCity} · ${total}个打卡点</span></div>
+        </div>
+        <div class="route-body"><span>🛣️ ${r.distance}km</span><span>🕐 ${r.hours}h</span><span>✅ ${done}/${total}</span></div>
+      </div>`;
+  }).join('');
+
+  // 内联创建卡片点击
+  const inlineCard = container.querySelector('#inline-create');
+  if (inlineCard) inlineCard.addEventListener('click', () => openCreateModal());
+  // 绑定路线卡片点击
+  container.querySelectorAll('.route-card').forEach(card => {
+    card.addEventListener('click', () => openRouteDetail(Number(card.dataset.routeId)));
+  });
+}
+
+// ── 路线详情渲染 ────────────────────────────
+function renderRouteDetail(routeId) {
+  const routes = Store.getRoutes();
+  const route = routes.find(r => r.id === routeId);
+  if (!route) { showToast('路线不存在'); closeDetail(); return; }
+
+  document.getElementById('detail-title').textContent = route.title;
+
+  // 大地图（320px + 可点击标记）
+  const mapArea = document.getElementById('map-area');
+  const cps = route.checkpoints;
+  const doneCount = cps.filter(c => c.checked).length;
+  const nowIdx = cps.findIndex(c => !c.checked);
+  // 标记位置（曲线分布）
+  const positions = cps.map((_, i) => {
+    const t = i / Math.max(cps.length - 1, 1);
+    return { top: 18 + Math.sin(t * 2.5) * 22 + t * 8, left: 12 + t * 62 };
+  });
+  // 连线角度
+  function lineStyle(from, to) {
+    const dx = to.left - from.left, dy = to.top - from.top;
+    const len = Math.sqrt(dx*dx + dy*dy);
+    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+    return `width:${len}%;top:${from.top+5}%;left:${from.left+5}%;transform:rotate(${angle}deg)`;
+  }
+  mapArea.className = 'map-area-lg';
+  mapArea.innerHTML = `
+    <div style="width:100%;height:100%;position:relative;
+      background:radial-gradient(circle at 28% 38%,rgba(13,165,191,0.08),transparent 40%),
+      radial-gradient(circle at 65% 50%,rgba(255,154,118,0.12),transparent 40%),
+      linear-gradient(0deg,transparent 48px,rgba(13,165,191,0.04) 49px),
+      linear-gradient(90deg,transparent 48px,rgba(13,165,191,0.03) 49px);border-radius:12px">
+      ${cps.map((cp, i) => {
+        const cls = cp.checked ? 'done' : (i === nowIdx ? 'now' : '');
+        return `<div class="map-marker-lg ${cls}" style="top:${positions[i].top}%;left:${positions[i].left}%" data-cp-id="${cp.id}" data-cp-name="${cp.name}">${cp.checked?'✓':cp.sequence||i+1}</div>`;
+      }).join('')}
+      ${cps.map((_, i) => i < cps.length-1 ? `<div class="map-connector ${cps[i].checked&&cps[i+1].checked?'done':''}" style="${lineStyle(positions[i], positions[i+1])}"></div>` : '').join('')}
+    </div>
+    <div class="map-hint">地图示意 · 实际使用微信地图 · 点击节点打卡</div>`;
+
+  // 标记点击：弹出打卡或详情
+  mapArea.querySelectorAll('.map-marker-lg').forEach(marker => {
+    marker.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const cpId = Number(marker.dataset.cpId);
+      const cpName = marker.dataset.cpName;
+      const cp = cps.find(c => c.id === cpId);
+      if (cp && cp.checked) {
+        // 已打卡：显示打卡信息
+        const ci = cp.checkin;
+        const moodEmoji = { happy:'😊', excited:'🤩', peace:'😌', moved:'🥹' };
+        alert(`📍 ${cpName}\n${ci?.content||'已打卡'}\n${(ci?.mood||[]).map(m=>moodEmoji[m]||'').join(' ')} ${'★'.repeat(ci?.rating||0)}`);
+      } else if (cp && !cp.checked) {
+        // 未打卡：打开打卡界面
+        openCheckinModal(routeId, cp.id, cp.name);
+      }
+    });
+  });
+  mapArea.addEventListener('click', () => alert('地图示意 — 实际使用时将调用微信地图 SDK 进行交互'));
+
+  // 内容
+  const progress = Math.round((doneCount / Math.max(cps.length, 1)) * 100);
+  const deg = (progress / 100) * 360;
+
+  // 照片墙（从已打卡点收集）
+  const checkedPhotos = cps.filter(c => c.checked && c.checkin).map(c => ({ name: c.name, content: c.checkin.content }));
+
+  const detailContent = document.getElementById('detail-content');
+  detailContent.innerHTML = `
+    <div class="card">
+      <div style="font-size:20px;font-weight:700;color:var(--text)">${route.title}</div>
+      <div style="font-size:13px;color:var(--text2);margin-top:4px">${route.description || ''}</div>
+      <div style="display:flex;gap:16px;margin-top:10px;font-size:12px;color:var(--text2)">
+        <span>📍 ${route.startCity} → ${route.endCity}</span><span>🛣️ ${route.distance} km</span><span>🕐 ${route.hours} 小时</span></div>
+    </div>
+    <div class="date-pill"><span class="big">${new Date().getDate()}</span>
+      <div><div style="font-size:9px;color:var(--text3)">${new Date().getFullYear()} / ${String(new Date().getMonth()+1).padStart(2,'0')}</div><div>${['日','一','二','三','四','五','六'][new Date().getDay()]}</div></div>
+      <span style="color:var(--text3)">·</span><span>${route.startCity}</span></div>
+    ${checkedPhotos.length > 0 ? `
+    <div class="photo-scroll">
+      ${checkedPhotos.map((p,i) => `<div class="photo-tile ${i%3===0?'big':'small'}"><div class="ph-inner" style="background:${['linear-gradient(135deg,#FFA585,#FFB88C)','linear-gradient(180deg,#89D4CF,#4DCADC)','linear-gradient(180deg,#E8C5A0,#D4A574)','linear-gradient(135deg,#C4A6E8,#FBC2EB)'][i%4]}"><span class="ph-label">${p.name}</span></div></div>`).join('')}
+    </div>` : ''}
+    <div class="progress-row">
+      <div class="progress-ring" style="background:conic-gradient(#34C759 0deg ${deg}deg, rgba(0,0,0,0.05) ${deg}deg 360deg)"><div class="inner">${doneCount}/${cps.length}</div></div>
+      <div class="progress-text"><h4>打卡进度 ${progress}%</h4><span>已完成 ${doneCount} 个打卡点，还剩 ${cps.length - doneCount} 个 ✨</span></div>
+    </div>
+    ${cps.map((cp, i) => {
+      const checked = cp.checked;
+      const isNow = i === nowIdx && !checked;
+      const dotCls = checked ? 'done' : (isNow ? 'now' : 'pending');
+      const lineCls = checked && i < cps.length-1 && cps[i+1].checked ? 'done' : '';
+      const moods = cp.checkin?.mood || [];
+      const moodEmoji = { happy:'😊', excited:'🤩', peace:'😌', moved:'🥹' };
+      return `
+        <div class="cp-card${checked?' done':''}${isNow?' style=border-color:rgba(255,159,10,0.25);background:rgba(255,159,10,0.03)':''}">
+          <div class="cp-timeline"><div class="cp-dot ${dotCls}">${checked?'✓':cp.sequence||i+1}</div>${i<cps.length-1?`<div class="cp-line ${lineCls}"></div>`:''}</div>
+          <div class="cp-info">
+            <div class="name">${cp.name}</div><div class="addr">${cp.address||''}</div><div class="time">🕐 ${cp.arriveTime||''} · 停留 ${cp.stay||0} 分钟</div>
+            ${checked && cp.checkin ? `
+              <div class="thumb" style="background:linear-gradient(135deg,#FFD4C0,#FFE0D0)">📸</div>
+              ${cp.checkin.content ? `<div class="note">"${cp.checkin.content}"</div>` : ''}
+              ${moods.length > 0 ? `<div class="cp-moods">${moods.map(m => moodEmoji[m]||'').join('')}</div>` : ''}
+              ${cp.checkin.rating ? `<div class="cp-rating">${'★'.repeat(cp.checkin.rating)}${'☆'.repeat(5-cp.checkin.rating)}</div>` : ''}
+            ` : ''}
+            ${isNow ? `<button class="checkin-btn" data-checkin="${cp.id}" data-name="${cp.name}">📍 立即打卡</button>` : ''}
+          </div>
+        </div>`;
+    }).join('')}
+  `;
+
+  // 操作按钮
+  const isCompleted = route.status === 'completed';
+  const allDone = doneCount === cps.length;
+  document.getElementById('detail-actions').innerHTML = `
+    <button class="primary-btn" style="flex:1;margin:0;background:var(--glass);color:var(--primary);border:1px solid var(--primary)" id="btn-edit-from-detail">编辑路线</button>
+    ${(isCompleted || allDone) ? `<button class="primary-btn" style="flex:1;margin:0;background:linear-gradient(135deg,#FF6B6B,#FF8E53);color:#fff;border:none" id="btn-share-from-detail">📤 分享到社区</button>` : ''}
+    <button class="primary-btn" style="flex:1;margin:0;background:var(--error)" id="btn-delete-route">删除</button>
+  `;
+
+  // 绑定事件
+  document.getElementById('btn-edit-from-detail').addEventListener('click', () => openCreateModal(routeId));
+  const shareBtn = document.getElementById('btn-share-from-detail');
+  if (shareBtn) shareBtn.addEventListener('click', () => {
+    if (allDone && route.status !== 'completed') { route.status = 'completed'; Store.saveRoutes(routes); }
+    openShareModal(routeId);
+  });
+  document.getElementById('btn-delete-route').addEventListener('click', () => {
+    if (confirm('确定要删除这条路线吗？')) {
+      const routes = Store.getRoutes().filter(r => r.id !== routeId);
+      Store.saveRoutes(routes);
+      showToast('已删除');
+      closeDetail();
+    }
+  });
+  // 打卡按钮
+  detailContent.querySelectorAll('.checkin-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openCheckinModal(routeId, Number(btn.dataset.checkin), btn.dataset.name);
+    });
+  });
+}
+
+// ── 创建/编辑路线弹层 ──────────────────────
+function openCreateModal(routeId = null) {
+  editingRouteId = routeId;
+  const title = document.getElementById('modal-create-title');
+  title.textContent = routeId ? '编辑路线' : '创建路线';
+
+  let route = null;
+  let cps = [{ name:'', address:'', arriveTime:'', stay:'60' }];
+  if (routeId) {
+    const routes = Store.getRoutes();
+    route = routes.find(r => r.id === routeId);
+    if (route) cps = route.checkpoints.map(c => ({ name:c.name, address:c.address||'', arriveTime:c.arriveTime||'', stay:String(c.stay||60) }));
+  }
+
+  const form = document.getElementById('create-form');
+  form.innerHTML = `
+    <div class="form-section">
+      <div class="sec-title">基本信息</div>
+      <div style="height:80px;border-radius:8px;background:rgba(0,0,0,0.03);display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:13px;margin-bottom:8px">📷 添加封面图片</div>
+      <input id="route-title" placeholder="路线名称 *" value="${route?.title||''}">
+      <textarea id="route-desc" placeholder="描述这条路线的亮点...">${route?.description||''}</textarea>
+      <div class="form-row"><input id="route-start" placeholder="出发城市" value="${route?.startCity||''}"><input id="route-end" placeholder="目的城市" value="${route?.endCity||''}"></div>
+      <div class="form-row"><input id="route-dist" placeholder="总距离(km)" type="number" value="${route?.distance||''}"><input id="route-hours" placeholder="预估时长(h)" type="number" value="${route?.hours||''}"></div>
+    </div>
+    <div class="form-section">
+      <div class="sec-title">打卡点 <span style="font-size:11px;color:var(--text3)">(${cps.length}个)</span></div>
+      <div id="cp-edit-list"></div>
+      <div class="add-cp" id="btn-add-cp">+ 添加打卡点</div>
+    </div>
+  `;
+
+  // 渲染打卡点编辑（支持拖拽排序）
+  function renderCPEdits() {
+    document.getElementById('cp-edit-list').innerHTML = cps.map((cp, i) => `
+      <div class="cp-edit-card" draggable="true" data-cp-idx="${i}">
+        <div class="cp-edit-header">
+          <span class="drag-handle">⋮⋮</span>
+          <span class="cp-edit-num">${i+1}</span>
+          <span style="font-size:11px;color:var(--error);cursor:pointer;margin-left:auto" data-del-cp="${i}">删除</span>
+        </div>
+        <input class="cp-name-inp" data-idx="${i}" placeholder="打卡点名称 *" value="${cp.name}">
+        <input class="cp-addr-inp" data-idx="${i}" placeholder="详细地址" value="${cp.address}">
+        <div class="form-row"><input class="cp-time-inp" data-idx="${i}" placeholder="预计到达时间" value="${cp.arriveTime}"><input class="cp-stay-inp" data-idx="${i}" placeholder="停留时长(分钟)" type="number" value="${cp.stay}"></div>
+      </div>`).join('');
+
+    // 拖拽事件
+    const cards = document.querySelectorAll('#cp-edit-list .cp-edit-card');
+    cards.forEach(card => {
+      card.addEventListener('dragstart', (e) => {
+        card.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', card.dataset.cpIdx);
+      });
+      card.addEventListener('dragend', () => { card.classList.remove('dragging'); });
+      card.addEventListener('dragover', (e) => { e.preventDefault(); card.classList.add('drag-over'); });
+      card.addEventListener('dragleave', () => { card.classList.remove('drag-over'); });
+      card.addEventListener('drop', (e) => {
+        e.preventDefault();
+        card.classList.remove('drag-over');
+        const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
+        const toIdx = parseInt(card.dataset.cpIdx);
+        if (fromIdx !== toIdx && !isNaN(fromIdx) && !isNaN(toIdx)) {
+          const item = cps.splice(fromIdx, 1)[0];
+          cps.splice(toIdx, 0, item);
+          renderCPEdits();
+        }
+      });
+    });
+
+    // 删除按钮
+    document.querySelectorAll('[data-del-cp]').forEach(el => {
+      el.addEventListener('click', () => {
+        const idx = Number(el.dataset.delCp);
+        if (cps.length <= 1) { showToast('至少需要一个打卡点'); return; }
+        cps.splice(idx, 1);
+        renderCPEdits();
+      });
+    });
+    // 输入同步
+    ['cp-name-inp','cp-addr-inp','cp-time-inp','cp-stay-inp'].forEach(cls => {
+      document.querySelectorAll(`.${cls}`).forEach(inp => {
+        inp.addEventListener('input', () => {
+          const idx = Number(inp.dataset.idx);
+          const key = cls.includes('name')?'name':cls.includes('addr')?'address':cls.includes('time')?'arriveTime':'stay';
+          cps[idx][key] = inp.value;
+        });
+      });
+    });
+  }
+  renderCPEdits();
+
+  document.getElementById('btn-add-cp').addEventListener('click', () => {
+    cps.push({ name:'', address:'', arriveTime:'', stay:'60' });
+    renderCPEdits();
+  });
+
+  showModal('modal-create');
+}
+
+function saveRoute() {
+  const title = document.getElementById('route-title').value.trim();
+  const start = document.getElementById('route-start').value.trim();
+  const end = document.getElementById('route-end').value.trim();
+  const desc = document.getElementById('route-desc').value.trim();
+  const dist = parseFloat(document.getElementById('route-dist').value) || 0;
+  const hours = parseFloat(document.getElementById('route-hours').value) || 0;
+
+  if (!title) { showToast('请输入路线名称'); return; }
+  if (!start || !end) { showToast('请填写出发和目的城市'); return; }
+
+  // 收集打卡点
+  const cpItems = [];
+  document.querySelectorAll('#cp-edit-list .cp-edit-card').forEach((card, i) => {
+    const name = card.querySelector('.cp-name-inp')?.value?.trim() || '';
+    const addr = card.querySelector('.cp-addr-inp')?.value?.trim() || '';
+    const time = card.querySelector('.cp-time-inp')?.value?.trim() || '';
+    const stay = parseInt(card.querySelector('.cp-stay-inp')?.value) || 60;
+    if (name) cpItems.push({ name, address:addr, arriveTime:time, stay });
+  });
+  if (cpItems.length === 0) { showToast('请至少添加一个打卡点'); return; }
+
+  const routes = Store.getRoutes();
+  if (editingRouteId) {
+    const idx = routes.findIndex(r => r.id === editingRouteId);
+    if (idx >= 0) {
+      routes[idx].title = title; routes[idx].description = desc;
+      routes[idx].startCity = start; routes[idx].endCity = end;
+      routes[idx].distance = dist; routes[idx].hours = hours;
+      // 保留原有打卡点的 checked 状态
+      const oldCPs = routes[idx].checkpoints;
+      routes[idx].checkpoints = cpItems.map((cp, i) => {
+        const old = oldCPs && oldCPs[i];
+        return { id: old?.id || Date.now() + i, ...cp, lat:0, lng:0, checked: old?.checked || false, checkin: old?.checkin || null };
+      });
+    }
+  } else {
+    const newId = Date.now();
+    routes.push({
+      id: newId, title, description: desc, cover:['grad1','grad2','grad3'][routes.length%3],
+      startCity: start, endCity: end, distance: dist, hours, status: 'draft',
+      checkpoints: cpItems.map((cp, i) => ({ id: newId + i + 1, ...cp, lat:0, lng:0, checked:false, checkin:null, sequence:i+1 }))
+    });
+  }
+  Store.saveRoutes(routes);
+  hideModal('modal-create');
+  editingRouteId = null;
+  showToast('保存成功');
+  renderRouteList();
+  if (currentDetailRouteId) renderRouteDetail(currentDetailRouteId);
+}
+
+// ── 打卡弹层 ────────────────────────────────
+function openCheckinModal(routeId, checkpointId, cpName) {
+  checkinTarget = { routeId, checkpointId, cpName };
+  document.getElementById('checkin-title').textContent = `发布打卡 · ${cpName}`;
+  let selMoods = [];
+  let selRating = 0;
+  let photoDataUrl = '';
+
+  document.getElementById('checkin-form-content').innerHTML = `
+    <div class="upload-area" id="checkin-upload-area">
+      <div id="upload-placeholder"><div style="font-size:40px">📷</div><div style="font-size:13px">点击拍照或选择照片</div></div>
+      <input type="file" accept="image/*" id="checkin-photo-input" style="display:none">
+      <img id="checkin-photo-preview" style="display:none;max-width:100%;max-height:170px;border-radius:12px;object-fit:cover">
+    </div>
+    <div class="card"><textarea id="checkin-content" placeholder="记录此刻的感受..." style="width:100%;border:none;background:transparent;outline:none;font-size:14px;height:80px;resize:none;font-family:inherit"></textarea></div>
+    <div class="card">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:8px">心情 (可多选)</div>
+      <div class="mood-row" id="checkin-moods">
+        <div class="mood-tag m-happy" data-mood="happy">😊 开心</div>
+        <div class="mood-tag m-excited" data-mood="excited">🤩 兴奋</div>
+        <div class="mood-tag m-peace" data-mood="peace">😌 平静</div>
+        <div class="mood-tag m-moved" data-mood="moved">🥹 感动</div>
+      </div>
+    </div>
+    <div class="card" style="text-align:center">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:8px">评分 <span id="rating-label"></span></div>
+      <div class="stars" style="justify-content:center" id="checkin-stars">
+        ${[1,2,3,4,5].map(i => `<span class="star off" data-rating="${i}">★</span>`).join('')}
+      </div>
+    </div>
+    <div class="card" style="display:flex;align-items:center;gap:8px"><span>📍</span><span style="font-size:13px;color:var(--text2)" id="checkin-loc-text">${cpName}</span></div>
+  `;
+
+  const ratingLabels = ['','很差','一般','好','很好','超棒'];
+
+  // 照片
+  document.getElementById('checkin-upload-area').addEventListener('click', () => {
+    document.getElementById('checkin-photo-input').click();
+  });
+  document.getElementById('checkin-photo-input').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      photoDataUrl = ev.target.result;
+      document.getElementById('upload-placeholder').style.display = 'none';
+      const img = document.getElementById('checkin-photo-preview');
+      img.src = photoDataUrl; img.style.display = 'block';
+      document.getElementById('checkin-upload-area').classList.add('has-photo');
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // 心情
+  document.querySelectorAll('#checkin-moods .mood-tag').forEach(tag => {
+    tag.addEventListener('click', () => {
+      const m = tag.dataset.mood;
+      const idx = selMoods.indexOf(m);
+      if (idx >= 0) { selMoods.splice(idx, 1); tag.classList.remove('sel'); }
+      else { selMoods.push(m); tag.classList.add('sel'); }
+    });
+  });
+
+  // 评分
+  const starEls = document.querySelectorAll('#checkin-stars .star');
+  starEls.forEach(s => {
+    s.addEventListener('click', () => {
+      selRating = Number(s.dataset.rating);
+      starEls.forEach((ss, i) => { ss.classList.toggle('on', i < selRating); ss.classList.toggle('off', i >= selRating); });
+      document.getElementById('rating-label').textContent = '— ' + ratingLabels[selRating];
+    });
+  });
+
+  document.getElementById('btn-do-checkin').onclick = () => doCheckin(photoDataUrl, selMoods, selRating);
+  document.getElementById('btn-submit-checkin').onclick = () => doCheckin(photoDataUrl, selMoods, selRating);
+
+  showModal('modal-checkin');
+}
+
+function doCheckin(photoDataUrl, selMoods, selRating) {
+  if (!checkinTarget) return;
+  const content = document.getElementById('checkin-content')?.value?.trim() || '';
+  if (!photoDataUrl) { showToast('请上传打卡照片'); return; }
+
+  const routes = Store.getRoutes();
+  const route = routes.find(r => r.id === checkinTarget.routeId);
+  if (!route) return;
+  const cp = route.checkpoints.find(c => c.id === checkinTarget.checkpointId);
+  if (!cp) return;
+  cp.checked = true;
+  cp.checkin = { photo: photoDataUrl, content, mood: selMoods, rating: selRating };
+
+  // 检查是否全部完成
+  if (route.checkpoints.every(c => c.checked)) route.status = 'completed';
+  else if (route.status === 'draft') route.status = 'in_progress';
+
+  Store.saveRoutes(routes);
+  hideModal('modal-checkin');
+  checkinTarget = null;
+  showToast('打卡成功！🎉');
+  if (currentDetailRouteId) renderRouteDetail(currentDetailRouteId);
+  renderRouteList();
+}
+
+// ── 发现页（社区 Feed）───────────────────
+function renderDiscover() {
+  const posts = Store.getPosts();
+  const routes = Store.getRoutes();
+  const container = document.getElementById('discover-list');
+  const coverGradients = [
+    'linear-gradient(135deg,#FFD4C0,#FFB88C,#FECF9E)',
+    'linear-gradient(135deg,#89D4CF,#4DCADC,#0DA5BF)',
+    'linear-gradient(135deg,#C4A6E8,#A18CD1,#FBC2EB)',
+    'linear-gradient(135deg,#FFA585,#FF6B6B,#FF8E53)',
+  ];
+
+  if (posts.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">还没有人分享</div><div class="empty-desc">完成一条路线后，来社区分享你的旅行故事吧</div></div>`;
+  } else {
+    // 按时间倒序
+    const sorted = [...posts].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    container.innerHTML = sorted.map((p, i) => {
+      const route = routes.find(r => r.id === p.routeId);
+      const done = route ? route.checkpoints.filter(c => c.checked).length : 0;
+      const total = route ? route.checkpoints.length : 0;
+      return `
+        <div class="feed-card" data-post-id="${p.id}">
+          <div class="feed-cover">
+            ${p.coverPhoto ? `<img class="feed-cover-img" src="${p.coverPhoto}" alt="cover">` :
+            `<div class="feed-cover-placeholder" style="background:${coverGradients[i%4]}">🗺️</div>`}
+            <div class="feed-overlay"><div class="feed-route-info"><span class="fr-title">${p.title}</span>${route ? `${route.startCity} → ${route.endCity} · ${total}个打卡点` : ''}</div></div>
+          </div>
+          <div class="feed-body">
+            <div class="feed-author">
+              <div class="fa-avatar" data-author="${p.authorName}" style="cursor:pointer">${p.authorAvatar ? `<img src="${p.authorAvatar}" alt="avatar">` : '🧑'}</div>
+              <span class="fa-name" data-author="${p.authorName}" style="cursor:pointer;color:var(--primary)">${p.authorName}</span>
+              <span class="fa-time">${p.createdAt}</span>
+            </div>
+            <div class="feed-caption">${p.caption.length > 80 ? p.caption.slice(0,80)+'...' : p.caption}</div>
+            <div class="feed-tags">${p.tags.map(t => `<span class="feed-tag">#${t}</span>`).join('')}</div>
+            <div class="feed-actions">
+              <button class="fa-btn ${p.liked?'liked':''}" data-action="like" data-post-id="${p.id}">${p.liked?'❤️':'🤍'} ${p.likes}</button>
+              <button class="fa-btn ${p.collected?'collected':''}" data-action="collect" data-post-id="${p.id}">${p.collected?'⭐':'☆'} 收藏</button>
+              <button class="fa-btn" data-action="comment" data-post-id="${p.id}">💬 ${p.commentCount||0}</button>
+              <button class="fa-btn" data-action="copy" data-post-id="${p.id}">📋 复用路线</button>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+
+    // 绑定事件
+    container.querySelectorAll('.feed-card').forEach(card => {
+      card.addEventListener('click', (e) => {
+        // 点击作者头像/名称 → 查看用户主页
+        const authorEl = e.target.closest('[data-author]');
+        if (authorEl) { e.stopPropagation(); renderUserProfile(authorEl.dataset.author); return; }
+        // 不拦截按钮点击
+        if (e.target.closest('button')) return;
+        openPostDetail(Number(card.dataset.postId));
+      });
+    });
+    container.querySelectorAll('.fa-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const postId = Number(btn.dataset.postId);
+        const action = btn.dataset.action;
+        if (action === 'like') toggleLike(postId);
+        else if (action === 'collect') toggleCollect(postId);
+        else if (action === 'comment') openPostDetail(postId);
+        else if (action === 'copy') copySharedRoute(postId);
+      });
+    });
+  }
+
+  // 搜索
+  const searchInput = document.getElementById('searchInput');
+  searchInput.oninput = (e) => {
+    const q = e.target.value.trim().toLowerCase();
+    if (q) {
+      const filtered = posts.filter(p => p.title.toLowerCase().includes(q) || p.tags.some(t => t.toLowerCase().includes(q)));
+      container.innerHTML = filtered.length === 0
+        ? `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">未找到相关内容</div></div>`
+        : filtered.map(p => `<div class="feed-card" style="margin:10px 14px;padding:14px;background:var(--glass);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer">📌 <b>${p.title}</b><br><span style="font-size:12px;color:var(--text2)">${p.caption.slice(0,60)}...</span></div>`).join('');
+    } else { renderDiscover(); }
+  };
+}
+
+/** 帖子详情 */
+function openPostDetail(postId) {
+  currentPostId = postId;
+  const posts = Store.getPosts();
+  const post = posts.find(p => p.id === postId);
+  if (!post) return;
+  const routes = Store.getRoutes();
+  const route = routes.find(r => r.id === post.routeId);
+  const coverGradients = ['linear-gradient(135deg,#FFD4C0,#FFB88C)','linear-gradient(135deg,#89D4CF,#4DCADC)','linear-gradient(135deg,#C4A6E8,#FBC2EB)'];
+
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-post-detail').classList.add('active');
+
+  document.getElementById('post-detail-content').innerHTML = `
+    ${post.coverPhoto ? `<img class="post-cover" src="${post.coverPhoto}" alt="cover">` :
+    `<div class="post-cover-placeholder" style="background:${coverGradients[postId%3]}">🗺️</div>`}
+    <div class="post-header">
+      <div class="post-title">${post.title}</div>
+      <div class="post-meta"><span style="color:var(--primary);cursor:pointer;font-weight:500" id="btn-view-author">${post.authorName}</span> · ${post.createdAt} · ❤️ ${post.likes} · ⭐ 收藏 · 💬 ${post.commentCount||0}</div>
+      <div class="post-caption">${post.caption}</div>
+      <div class="feed-tags">${post.tags.map(t => `<span class="feed-tag">#${t}</span>`).join('')}</div>
+      ${route ? `
+        <div class="post-route-preview" id="btn-view-route-from-post">
+          <div class="prp-icon">🗺️</div>
+          <div class="prp-info"><div class="prp-title">${route.title}</div><div class="prp-meta">${route.startCity} → ${route.endCity} · ${route.checkpoints.length}个打卡点 · ${route.checkpoints.filter(c=>c.checked).length}个已打卡</div></div>
+          <span style="color:var(--text3)">→</span>
+        </div>` : ''}
+    </div>`;
+
+  // 操作按钮
+  document.getElementById('post-detail-actions').innerHTML = `
+    <div class="feed-actions" style="justify-content:space-around;padding:10px 0">
+      <button class="fa-btn ${post.liked?'liked':''}" id="btn-post-like">${post.liked?'❤️':'🤍'} ${post.likes}</button>
+      <button class="fa-btn ${post.collected?'collected':''}" id="btn-post-collect">${post.collected?'⭐':'☆'} 收藏</button>
+      <button class="fa-btn" id="btn-post-copy">📋 复用路线</button>
+    </div>`;
+
+  // 评论
+  document.getElementById('post-comments').innerHTML = `
+    <div class="cmt-title">评论 (${post.comments?.length||0})</div>
+    ${(post.comments||[]).map(c => `
+      <div class="comment-item">
+        <div class="cmt-avatar">🧑</div>
+        <div class="cmt-body"><div class="cmt-name">${c.author} ${c.isReply?'<span style="font-size:10px;color:var(--primary)">回复</span>':''}</div><div class="cmt-text">${c.text}</div><div class="cmt-time">${c.time}</div></div>
+      </div>`).join('')}`;
+
+  // 事件绑定
+  document.getElementById('btn-post-like').onclick = () => toggleLike(postId);
+  document.getElementById('btn-post-collect').onclick = () => toggleCollect(postId);
+  document.getElementById('btn-post-copy').onclick = () => copySharedRoute(postId);
+  const authorBtn = document.getElementById('btn-view-author');
+  if (authorBtn) authorBtn.onclick = () => renderUserProfile(post.authorName);
+  const viewRoute = document.getElementById('btn-view-route-from-post');
+  if (viewRoute) viewRoute.onclick = () => { openRouteDetail(post.routeId); };
+
+  document.getElementById('btn-close-post-detail').onclick = () => {
+    document.getElementById('page-post-detail').classList.remove('active');
+    switchTab(currentTab, true);
+    currentPostId = null;
+  };
+  document.getElementById('btn-send-comment').onclick = addComment;
+}
+
+/** 点赞 */
+function toggleLike(postId) {
+  const posts = Store.getPosts();
+  const p = posts.find(x => x.id === postId);
+  if (!p) return;
+  p.liked = !p.liked;
+  p.likes += p.liked ? 1 : -1;
+  Store.savePosts(posts);
+  if (currentPostId === postId) openPostDetail(postId);
+  renderDiscover();
+}
+
+/** 收藏 */
+function toggleCollect(postId) {
+  const posts = Store.getPosts();
+  const p = posts.find(x => x.id === postId);
+  if (!p) return;
+  p.collected = !p.collected;
+  Store.savePosts(posts);
+  showToast(p.collected ? '已收藏' : '已取消收藏');
+  if (currentPostId === postId) openPostDetail(postId);
+  renderDiscover();
+}
+
+/** 评论 */
+function addComment() {
+  const input = document.getElementById('comment-input');
+  const text = input.value.trim();
+  if (!text) return;
+  const posts = Store.getPosts();
+  const p = posts.find(x => x.id === currentPostId);
+  if (!p) return;
+  if (!p.comments) p.comments = [];
+  p.comments.push({ id: Date.now(), author: Store.getUser()?.nickname||'我', text, time: new Date().toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}) });
+  p.commentCount = p.comments.length;
+  Store.savePosts(posts);
+  input.value = '';
+  openPostDetail(currentPostId);
+  showToast('评论成功');
+}
+
+/** 用户资料（模拟多用户） */
+const UserRegistry = {
+  '旅行者小杨': { nickname:'旅行者小杨', username:'trailmemo_yang', avatar:'', bio:'热爱旅行的程序员，喜欢用脚步丈量世界。去过的城市：成都、杭州、北京、大理、厦门。梦想是环游中国！🧳'},
+  '西湖漫步者': { nickname:'西湖漫步者', username:'westlake_walker', avatar:'', bio:'杭州本地人，周末喜欢绕西湖散步拍照。分享西湖周边的宝藏路线~ 📸'},
+  '旅行达人小明': { nickname:'旅行达人小明', username:'travel_xiaoming', avatar:'', bio:'自由职业者，一年有一半时间在路上。专注挖掘小众目的地。'},
+  '吃货一枚': { nickname:'吃货一枚', username:'foodie_88', avatar:'', bio:'人生信条：没有什么是一顿火锅解决不了的。探店达人，吃遍全国美食！🍲'},
+  '新杭州人': { nickname:'新杭州人', username:'new_hangzhou', avatar:'', bio:'刚来杭州一年，正在慢慢探索这座城市的每一个角落。'},
+};
+function getUserProfile(username) {
+  if (!username) return null;
+  // 先查注册表
+  if (UserRegistry[username]) return UserRegistry[username];
+  // 再查当前登录用户
+  const user = Store.getUser();
+  if (user && (user.nickname === username || user.username === username)) {
+    return { nickname: user.nickname || user.username, username: user.username, avatar: user.avatar || '', bio: user.bio || '这个人很懒，什么都没写...' };
+  }
+  return { nickname: username, username, avatar: '', bio: '' };
+}
+
+/** 渲染用户主页 */
+function renderUserProfile(username) {
+  currentViewUser = username;
+  const profile = getUserProfile(username);
+  const posts = Store.getPosts().filter(p => p.authorName === username);
+  const allRoutes = Store.getRoutes();
+  const postRouteIds = new Set(posts.map(p => p.routeId));
+  const routes = allRoutes.filter(r => postRouteIds.has(r.id));
+  const coverGrads = ['linear-gradient(135deg,#FFD4C0,#FFB88C)','linear-gradient(135deg,#89D4CF,#4DCADC)','linear-gradient(135deg,#C4A6E8,#FBC2EB)'];
+
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-user-profile').classList.add('active');
+
+  // 渲染分享列表
+  function postsHTML() {
+    return posts.length === 0
+      ? `<div class="empty-state"><div class="empty-icon">📝</div><div class="empty-title">暂无分享</div></div>`
+      : posts.map((p,i) => `
+        <div class="feed-card" data-post-id="${p.id}">
+          <div class="feed-cover">
+            ${p.coverPhoto ? `<img class="feed-cover-img" src="${p.coverPhoto}">` : `<div class="feed-cover-placeholder" style="background:${coverGrads[i%3]}">🗺️</div>`}
+            <div class="feed-overlay"><div class="feed-route-info"><span class="fr-title">${p.title}</span></div></div>
+          </div>
+          <div class="feed-body"><div class="feed-caption">${p.caption.slice(0,60)}...</div>
+            <div class="feed-actions"><span class="fa-btn">❤️ ${p.likes}</span><span class="fa-btn">💬 ${p.commentCount||0}</span></div>
+          </div>
+        </div>`).join('');
+  }
+  // 渲染路线列表
+  function routesHTML() {
+    return routes.length === 0
+      ? `<div class="empty-state"><div class="empty-icon">🗺️</div><div class="empty-title">暂无公开路线</div></div>`
+      : routes.map(r => `
+        <div class="route-card" data-route-id="${r.id}">
+          <div class="route-cover" style="background:${coverGrads[r.id%3]}">
+            <div class="cover-label"><span class="rtitle">${r.title}</span><span class="rcities">${r.startCity} → ${r.endCity} · ${r.checkpoints.length}个打卡点</span></div>
+          </div>
+        </div>`).join('');
+  }
+
+  document.getElementById('user-profile-content').innerHTML = `
+    <div class="user-profile-header">
+      <div class="uph-avatar">${profile?.avatar ? `<img src="${profile.avatar}" alt="avatar">` : '🧑'}</div>
+      <div class="uph-name">${profile?.nickname || username}</div>
+      <div class="uph-id">@${profile?.username || username}</div>
+      ${profile?.bio ? `<div class="uph-bio">${profile.bio}</div>` : ''}
+      <div class="uph-stats">
+        <div class="stat-item"><div class="stat-num">${posts.length}</div><div class="stat-label">分享</div></div>
+        <div class="stat-item"><div class="stat-num">${routes.length}</div><div class="stat-label">公开路线</div></div>
+      </div>
+    </div>
+    <div class="uph-tabs">
+      <div class="uph-tab active" data-uph-tab="posts">📝 分享</div>
+      <div class="uph-tab" data-uph-tab="routes">🗺️ 公开路线</div>
+    </div>
+    <div class="uph-tab-content active" id="uph-posts">${postsHTML()}</div>
+    <div class="uph-tab-content" id="uph-routes">${routesHTML()}</div>
+  `;
+
+  // 选项卡切换
+  document.querySelectorAll('.uph-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.uph-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      document.querySelectorAll('.uph-tab-content').forEach(c => c.classList.remove('active'));
+      document.getElementById('uph-' + tab.dataset.uphTab).classList.add('active');
+    });
+  });
+
+  // 绑定卡片事件
+  document.querySelectorAll('#uph-posts .feed-card').forEach(card => {
+    card.addEventListener('click', () => openPostDetail(Number(card.dataset.postId)));
+  });
+  document.querySelectorAll('#uph-routes .route-card').forEach(card => {
+    card.addEventListener('click', (e) => { e.stopPropagation(); openRouteDetail(Number(card.dataset.routeId)); });
+  });
+  document.getElementById('btn-close-user-profile').onclick = () => {
+    document.getElementById('page-user-profile').classList.remove('active');
+    switchTab(currentTab, true);
+    currentViewUser = null;
+  };
+}
+function copySharedRoute(postId) {
+  const posts = Store.getPosts();
+  const post = posts.find(p => p.id === postId);
+  if (!post) return;
+  const routes = Store.getRoutes();
+  const srcRoute = routes.find(r => r.id === post.routeId);
+  if (!srcRoute) return;
+  const newId = Date.now();
+  const newRoute = {
+    id: newId, title: srcRoute.title + '(复用)', description: `复用了 @${post.authorName} 分享的路线`, cover:srcRoute.cover, startCity:srcRoute.startCity, endCity:srcRoute.endCity,
+    distance:srcRoute.distance, hours:srcRoute.hours, status:'draft',
+    checkpoints: srcRoute.checkpoints.map((cp, i) => ({ id: newId+i+1, name:cp.name, address:cp.address, lat:cp.lat, lng:cp.lng, arriveTime:cp.arriveTime, stay:cp.stay, checked:false, checkin:null, sequence:i+1 }))
+  };
+  routes.push(newRoute);
+  Store.saveRoutes(routes);
+  showToast('已复制到我的路线');
+}
+
+/** 打开分享弹层（路线完成后调用） */
+function openShareModal(routeId) {
+  shareRouteId = routeId;
+  const routes = Store.getRoutes();
+  const route = routes.find(r => r.id === routeId);
+  if (!route) return;
+  const user = Store.getUser();
+  const checkins = route.checkpoints.filter(c => c.checked && c.checkin);
+  document.getElementById('share-form-content').innerHTML = `
+    <div class="share-route-summary">
+      <div class="srs-icon">🗺️</div>
+      <div class="srs-info"><div class="srs-title">${route.title}</div><div class="srs-meta">${route.startCity} → ${route.endCity} · ${route.checkpoints.length}个打卡点 · 已完成 ${checkins.length} 个</div></div>
+    </div>
+    <div class="card"><input id="share-title" placeholder="分享标题 *" value="${route.title} · 完结分享 🎉" style="width:100%;border:none;background:transparent;outline:none;font-size:15px;font-weight:600"></div>
+    <div class="card"><textarea id="share-caption" placeholder="分享你的旅行故事..." style="width:100%;border:none;background:transparent;outline:none;font-size:14px;height:100px;resize:none;font-family:inherit">三天时间，${route.checkpoints.length}个打卡点，每一站都值得记录！分享我的路线给大家~</textarea></div>
+    <div class="card"><input id="share-tags" placeholder="标签（用逗号分隔）" value="${route.startCity},旅行,攻略" style="width:100%;border:none;background:transparent;outline:none;font-size:14px"></div>
+    <div class="upload-area" id="share-cover-area" style="margin:0 14px">
+      <div id="share-cover-placeholder"><div style="font-size:36px">🖼️</div><div style="font-size:12px">点击选择封面图片</div></div>
+      <input type="file" accept="image/*" id="share-cover-input" style="display:none">
+      <img id="share-cover-preview" style="display:none;max-width:100%;max-height:160px;border-radius:12px;object-fit:cover">
+    </div>
+  `;
+  let coverDataUrl = '';
+  document.getElementById('share-cover-area').onclick = () => document.getElementById('share-cover-input').click();
+  document.getElementById('share-cover-input').onchange = (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => { coverDataUrl = ev.target.result; document.getElementById('share-cover-placeholder').style.display='none'; const img = document.getElementById('share-cover-preview'); img.src = coverDataUrl; img.style.display='block'; };
+    reader.readAsDataURL(file);
+  };
+  document.getElementById('btn-do-share').onclick = () => publishShare(coverDataUrl);
+  document.getElementById('btn-publish-share').onclick = () => publishShare(coverDataUrl);
+  showModal('modal-share');
+}
+function publishShare(coverDataUrl) {
+  const title = document.getElementById('share-title')?.value?.trim();
+  const caption = document.getElementById('share-caption')?.value?.trim();
+  const tags = document.getElementById('share-tags')?.value?.split(',').map(t=>t.trim()).filter(Boolean);
+  if (!title) { showToast('请输入分享标题'); return; }
+  const user = Store.getUser();
+  const posts = Store.getPosts();
+  posts.unshift({
+    id: Date.now(), routeId: shareRouteId, authorName: user?.nickname||user?.username||'匿名', authorAvatar: user?.avatar||'',
+    title, caption: caption||'', coverPhoto: coverDataUrl, tags: tags||[], likes:0, collected:false, liked:false, commentCount:0,
+    createdAt: new Date().toLocaleString('zh-CN',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}), comments:[]
+  });
+  Store.savePosts(posts);
+  hideModal('modal-share');
+  shareRouteId = null;
+  showToast('分享成功！');
+  renderDiscover();
+}
+
+// ── 个人中心 ────────────────────────────────
+function renderProfile() {
+  const user = Store.getUser();
+  const routes = Store.getRoutes();
+  const posts = Store.getPosts();
+  const totalRoutes = routes.length;
+  const totalCheckins = routes.reduce((sum, r) => sum + r.checkpoints.filter(c => c.checked).length, 0);
+  const myPosts = posts.filter(p => p.authorName === (user?.nickname || user?.username));
+
+  document.getElementById('profile-content').innerHTML = `
+    <div class="profile-header">
+      <div class="avatar-lg">${user?.avatar ? `<img src="${user.avatar}" alt="avatar">` : '🧑'}</div>
+      <div class="profile-name">${user?.nickname || user?.username || '未登录'}</div>
+      <div class="profile-id">@${user?.username || '...'}</div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-item" id="stat-routes"><div class="num">${totalRoutes}</div><div class="label">我的路线</div></div>
+      <div class="stat-item" id="stat-checkins"><div class="num">${totalCheckins}</div><div class="label">打卡记录</div></div>
+      <div class="stat-item" id="stat-posts"><div class="num">${myPosts.length}</div><div class="label">我的分享</div></div>
+    </div>
+    <div class="menu-group">
+      <div class="menu-item" id="menu-routes"><div class="m-left"><span class="m-icon">🗺️</span><span class="m-text">我的路线</span></div><span class="m-right">→</span></div>
+      <div class="menu-item" id="menu-checkins"><div class="m-left"><span class="m-icon">✅</span><span class="m-text">我的打卡</span></div><span class="m-right">→</span></div>
+      <div class="menu-item" id="menu-posts"><div class="m-left"><span class="m-icon">📝</span><span class="m-text">我的分享</span></div><span class="m-right">→</span></div>
+    </div>
+    <div class="menu-group">
+      <div class="menu-item" id="menu-edit-profile"><div class="m-left"><span class="m-icon">✏️</span><span class="m-text">编辑资料</span></div><span class="m-right">→</span></div>
+      <div class="menu-item" id="menu-password"><div class="m-left"><span class="m-icon">🔒</span><span class="m-text">修改密码</span></div><span class="m-right">→</span></div>
+    </div>
+    <button class="logout-btn" id="btn-logout-profile">退出登录</button>
+  `;
+
+  // 绑定事件
+  document.getElementById('stat-routes').addEventListener('click', () => switchTab('routes'));
+  document.getElementById('stat-checkins').addEventListener('click', () => showMyCheckins());
+  document.getElementById('stat-posts').addEventListener('click', () => showMyPosts());
+  document.getElementById('menu-routes').addEventListener('click', () => switchTab('routes'));
+  document.getElementById('menu-checkins').addEventListener('click', () => showMyCheckins());
+  document.getElementById('menu-posts').addEventListener('click', () => showMyPosts());
+  document.getElementById('menu-edit-profile').addEventListener('click', () => openProfileEdit());
+  document.getElementById('menu-password').addEventListener('click', () => showModal('modal-password'));
+  document.getElementById('btn-logout-profile').addEventListener('click', () => doLogout());
+}
+
+function showMyCheckins() {
+  const routes = Store.getRoutes();
+  const allCheckins = [];
+  routes.forEach(r => {
+    r.checkpoints.filter(c => c.checked).forEach(cp => {
+      allCheckins.push({ routeName:r.title, cpName:cp.name, checkin:cp.checkin });
+    });
+  });
+
+  const container = document.getElementById('my-checkins-content');
+  if (allCheckins.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">暂无打卡记录</div><div class="empty-desc">去路线中完成你的第一次打卡吧</div></div>`;
+  } else {
+    const moodEmoji = { happy:'😊', excited:'🤩', peace:'😌', moved:'🥹' };
+    container.innerHTML = `<div class="checkin-grid">${allCheckins.map(ci => `
+      <div class="ci-card">
+        ${ci.checkin.photo ? `<img class="ci-img" src="${ci.checkin.photo}" alt="photo">` : `<div class="ci-img-placeholder">📸</div>`}
+        <div class="ci-body">
+          <div class="ci-route">${ci.routeName}</div>
+          <div class="ci-cp">📍 ${ci.cpName}</div>
+          ${ci.checkin.mood?.length ? `<div class="ci-mood">${ci.checkin.mood.map(m => moodEmoji[m]||'').join(' ')}</div>` : ''}
+        </div>
+      </div>`).join('')}</div>`;
+  }
+  showModal('modal-my-checkins');
+}
+
+/** 我的分享（个人帖子列表） */
+function showMyPosts() {
+  const user = Store.getUser();
+  const posts = Store.getPosts();
+  const myPosts = posts.filter(p => p.authorName === (user?.nickname || user?.username));
+  const coverGradients = ['linear-gradient(135deg,#FFD4C0,#FFB88C)','linear-gradient(135deg,#89D4CF,#4DCADC)','linear-gradient(135deg,#C4A6E8,#FBC2EB)'];
+  const container = document.createElement('div');
+  container.innerHTML = myPosts.length === 0
+    ? `<div class="empty-state"><div class="empty-icon">📝</div><div class="empty-title">还没有分享过</div><div class="empty-desc">完成一条路线后，来社区分享你的旅行故事吧</div></div>`
+    : myPosts.map((p, i) => `
+      <div class="feed-card" style="cursor:pointer" data-post-id="${p.id}">
+        <div class="feed-cover">
+          ${p.coverPhoto ? `<img class="feed-cover-img" src="${p.coverPhoto}">` : `<div class="feed-cover-placeholder" style="background:${coverGradients[i%3]}">🗺️</div>`}
+          <div class="feed-overlay"><div class="feed-route-info"><span class="fr-title">${p.title}</span></div></div>
+        </div>
+        <div class="feed-body"><div class="feed-caption">${p.caption.slice(0,60)}...</div>
+          <div class="feed-tags">${p.tags.map(t=>`<span class="feed-tag">#${t}</span>`).join('')}</div>
+          <div class="feed-actions"><span class="fa-btn">❤️ ${p.likes}</span><span class="fa-btn">💬 ${p.commentCount||0}</span><span class="fa-btn">${p.createdAt}</span></div>
+        </div>
+      </div>`).join('');
+
+  // 显示在弹层中
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay show';
+  modal.style.cssText = 'position:absolute;inset:0;z-index:200;display:flex;align-items:flex-end';
+  modal.innerHTML = `
+    <div class="modal-sheet" style="max-height:85vh;overflow-y:auto">
+      <div class="navbar" style="background:transparent;backdrop-filter:none;border:none;margin-bottom:8px">
+        <div class="close-btn">←</div><div class="title">我的分享 (${myPosts.length})</div>
+      </div>
+      ${container.innerHTML}
+    </div>`;
+  document.querySelector('.phone-frame').appendChild(modal);
+
+  modal.querySelector('.close-btn').onclick = () => modal.remove();
+  modal.addEventListener('click', function(e) { if (e.target === this) this.remove(); });
+  modal.querySelectorAll('.feed-card').forEach(card => {
+    card.addEventListener('click', () => { modal.remove(); openPostDetail(Number(card.dataset.postId)); });
+  });
+}
+
+function openProfileEdit() {
+  const user = Store.getUser();
+  document.getElementById('editNickname').value = user?.nickname || '';
+  document.getElementById('editBio').value = user?.bio || '';
+  document.getElementById('editUsername').textContent = user?.username || '-';
+  document.getElementById('editPhone').textContent = user?.phone || '未绑定';
+  document.getElementById('editRegTime').textContent = user?.createdAt || '-';
+  if (user?.avatar) {
+    document.getElementById('edit-avatar').innerHTML = `<img src="${user.avatar}" alt="avatar" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`;
+  }
+  showModal('modal-profile-edit');
+}
+
+function saveProfile() {
+  const user = Store.getUser();
+  user.nickname = document.getElementById('editNickname').value.trim() || user.nickname;
+  user.bio = document.getElementById('editBio').value.trim();
+  Store.saveUser(user);
+  hideModal('modal-profile-edit');
+  showToast('保存成功');
+  renderProfile();
+}
+
+function changeAvatar() {
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = 'image/*';
+  input.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const user = Store.getUser();
+      user.avatar = ev.target.result;
+      Store.saveUser(user);
+      document.getElementById('edit-avatar').innerHTML = `<img src="${user.avatar}" alt="avatar" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`;
+    };
+    reader.readAsDataURL(file);
+  });
+  input.click();
+}
+
+function changePasswordDo() {
+  const oldP = document.getElementById('oldPass').value;
+  const newP = document.getElementById('newPass').value;
+  const newP2 = document.getElementById('newPass2').value;
+  const user = Store.getUser();
+  if (oldP !== user.password) { showToast('旧密码不正确'); return; }
+  if (newP.length < 6) { showToast('新密码至少6位'); return; }
+  if (newP !== newP2) { showToast('两次密码不一致'); return; }
+  user.password = newP;
+  Store.saveUser(user);
+  hideModal('modal-password');
+  showToast('密码修改成功');
+}
+
+// ── 悬浮按钮显示控制（全局函数，非闭包内） ──
+function updateFabs() {
+  const agentFab = document.getElementById('agent-fab');
+  const activePage = document.querySelector('.page.active');
+  if (!activePage || !isLoggedIn) {
+    if (agentFab) agentFab.style.display = 'none';
+    return;
+  }
+  const hideOn = ['page-login','page-detail','page-post-detail','page-user-profile'];
+  if (agentFab) agentFab.style.display = hideOn.includes(activePage.id) ? 'none' : 'flex';
+}
+
+// ── 全局事件绑定 ────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  // Tab 切换
+  document.querySelectorAll('.tab-item').forEach(item => {
+    item.addEventListener('click', () => switchTab(item.dataset.tab));
+  });
+
+  // 登录按钮
+  document.getElementById('btn-wechat-login').addEventListener('click', () => {
+    isLoggedIn = true; showToast('微信登录成功');
+    if (pendingTab) { const pt = pendingTab; pendingTab = null; switchTab(pt); }
+    else switchTab('discover');
+  });
+  document.getElementById('btn-login').addEventListener('click', (e) => { addRipple(e); doLogin(); });
+  document.getElementById('link-register').addEventListener('click', () => {
+    document.getElementById('registerForm').style.display = 'block';
+  });
+  document.getElementById('btn-register').addEventListener('click', (e) => { addRipple(e); doRegister(); });
+  document.getElementById('link-back-login').addEventListener('click', () => {
+    document.getElementById('registerForm').style.display = 'none';
+  });
+
+  // 路线列表
+  document.getElementById('btn-create-from-list').addEventListener('click', () => openCreateModal());
+  document.querySelectorAll('#filter-row .filter-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('#filter-row .filter-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      renderRouteList(pill.dataset.filter);
+    });
+  });
+
+  // 详情页关闭
+  document.getElementById('btn-close-detail').addEventListener('click', closeDetail);
+
+  // 路线保存
+  document.getElementById('btn-save-route').addEventListener('click', saveRoute);
+  document.getElementById('btn-submit-route').addEventListener('click', (e) => { addRipple(e); saveRoute(); });
+
+  // 编辑资料
+  document.getElementById('btn-save-profile').addEventListener('click', saveProfile);
+  document.getElementById('btn-do-save-profile').addEventListener('click', (e) => { addRipple(e); saveProfile(); });
+  document.getElementById('btn-change-avatar').addEventListener('click', changeAvatar);
+
+  // 修改密码
+  document.getElementById('btn-do-change-password').addEventListener('click', (e) => { addRipple(e); changePasswordDo(); });
+
+  // 设置/登出
+  document.getElementById('btn-settings').addEventListener('click', () => showModal('modal-settings'));
+  document.getElementById('btn-logout-settings').addEventListener('click', doLogout);
+
+  // 弹层关闭（遮罩点击 & 关闭按钮）
+  document.querySelectorAll('.modal-overlay').forEach(m => {
+    m.addEventListener('click', function(e) {
+      if (e.target === this || e.target.dataset.close === this.id) {
+        this.classList.remove('show');
+        if (this.id === 'modal-create') editingRouteId = null;
+        if (this.id === 'modal-checkin') checkinTarget = null;
+      }
+    });
+  });
+
+  // Agent FAB
+  document.getElementById('agent-fab').addEventListener('click', (e) => {
+    addRipple(e);
+    // 登录页隐藏 Agent 按钮
+    if (!isLoggedIn) { showToast('请先登录'); return; }
+    showModal('modal-agent');
+  });
+
+  // Agent 聊天
+  const agentMsgs = document.getElementById('agent-msgs');
+  const agentInput = document.getElementById('agent-input');
+
+  function addAgentMsg(text, type) {
+    const div = document.createElement('div');
+    div.className = `agent-msg ${type}`;
+    div.innerHTML = text;
+    agentMsgs.appendChild(div);
+    agentMsgs.scrollTop = agentMsgs.scrollHeight;
+  }
+
+  function addAgentRouteCard(title, desc, checkpoints) {
+    const card = document.createElement('div');
+    card.className = 'am-card';
+    card.innerHTML = `<div style="font-weight:600;color:var(--text);margin-bottom:4px">🗺️ ${title}</div><div style="font-size:12px;color:var(--text2)">${desc}</div><div style="font-size:11px;color:var(--text3);margin-top:4px">📍 ${checkpoints}个打卡点 · 点击导入 →</div>`;
+    card.addEventListener('click', () => {
+      const routes = Store.getRoutes();
+      const newId = Date.now();
+      routes.push({ id:newId, title, description:`AI推荐的路线`, cover:['grad1','grad2','grad3'][routes.length%3], startCity:title.split('·')[0]||'推荐', endCity:'目的地', distance:0, hours:0, status:'draft', checkpoints: Array.from({length:checkpoints},(_,i)=>({id:newId+i+1,name:`打卡点${i+1}`,address:'',lat:0,lng:0,arriveTime:'',stay:60,checked:false,checkin:null,sequence:i+1})) });
+      Store.saveRoutes(routes);
+      hideModal('modal-agent');
+      showToast(`已导入"${title}"到我的路线`);
+      if (currentTab === 'routes') renderRouteList();
+    });
+    return card;
+  }
+
+  function handleAgentQuery(q) {
+    addAgentMsg(q, 'user');
+    const ql = q.toLowerCase();
+
+    // 模拟 AI 延迟
+    setTimeout(() => {
+      if (ql.includes('夏天') || ql.includes('避暑')) {
+        addAgentMsg('<span class="am-title">☀️ 为你推荐 3 条夏日旅行路线：</span>', 'bot');
+        const msgDiv = agentMsgs.lastElementChild;
+        msgDiv.appendChild(addAgentRouteCard('青岛·海滨三日游', '碧海蓝天，啤酒音乐，夏天就该去海边！预算约2000元', 5));
+        msgDiv.appendChild(addAgentRouteCard('大理·苍山洱海', '20°C的夏天，风花雪月，古城漫步。预算约2500元', 4));
+        msgDiv.appendChild(addAgentRouteCard('贵阳·清凉避暑', '爽爽的贵阳，瀑布溶洞，酸汤鱼美食。预算约1500元', 3));
+      } else if (ql.includes('成都') || ql.includes('美食')) {
+        addAgentMsg('<span class="am-title">🍜 成都美食之旅规划：</span>', 'bot');
+        const msgDiv = agentMsgs.lastElementChild;
+        msgDiv.appendChild(addAgentRouteCard('成都·三日美食之旅', '宽窄巷子→锦里→春熙路→太古里→九眼桥，火锅串串钵钵鸡全覆盖！人均500元', 5));
+        addAgentMsg('这条路线涵盖成都最经典的美食打卡点，从早茶到夜宵，每天安排2-3个打卡点不会太赶。建议住宿选在春熙路附近，出行方便~', 'bot');
+      } else if (ql.includes('情侣') || ql.includes('浪漫')) {
+        addAgentMsg('<span class="am-title">💕 适合情侣的浪漫路线：</span>', 'bot');
+        const msgDiv = agentMsgs.lastElementChild;
+        msgDiv.appendChild(addAgentRouteCard('厦门·鼓浪屿浪漫之旅', '钢琴码头→日光岩→菽庄花园→海边日落漫步。预算约3000元/两人', 4));
+        msgDiv.appendChild(addAgentRouteCard('丽江·古城慢时光', '四方街→木府→狮子山→束河古镇→泸沽湖。预算约3500元/两人', 5));
+      } else if (ql.includes('杭州') || ql.includes('攻略')) {
+        addAgentMsg(`<span class="am-title">📝 杭州三日游攻略</span><br><br><b>Day 1：西湖环湖</b><br>断桥残雪 → 苏堤春晓 → 花港观鱼 → 雷峰塔<br><br><b>Day 2：灵隐禅意</b><br>灵隐寺 → 飞来峰 → 龙井问茶 → 九溪烟树<br><br><b>Day 3：运河风情</b><br>拱宸桥 → 小河直街 → 中国伞博物馆 → 武林夜市<br><br>🍽️ <b>美食推荐：</b>楼外楼、知味观、奎元馆<br>🏨 <b>住宿建议：</b>西湖周边民宿，500-800元/晚<br>💰 <b>人均预算：</b>约2000元（不含往返交通）`, 'bot');
+        const msgDiv = agentMsgs.lastElementChild;
+        msgDiv.appendChild(addAgentRouteCard('杭州·西湖经典三日游', '环湖+灵隐+运河，涵盖杭州最精华的景点和美食', 6));
+      } else {
+        addAgentMsg(`我理解你想要「${q}」，但目前我的模拟数据有限 😅<br><br>你可以试试问我：<br>· "夏天去哪玩"<br>· "成都美食攻略"<br>· "情侣浪漫路线"<br>· "杭州三日游"<br><br>正式版将接入大语言模型，可以根据你的偏好为你定制专属旅行方案！`, 'bot');
+      }
+    }, 800);
+  }
+
+  document.getElementById('btn-agent-send').addEventListener('click', () => {
+    const q = agentInput.value.trim();
+    if (!q) return;
+    agentInput.value = '';
+    handleAgentQuery(q);
+  });
+  agentInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('btn-agent-send').click(); });
+
+  // Agent 快捷提问
+  document.querySelectorAll('#agent-suggestions .as-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const q = chip.dataset.q;
+      handleAgentQuery(q);
+    });
+  });
+
+  // 初始状态
+  if (isLoggedIn) { switchTab('discover'); } else { switchTab('login'); updateFabs(); }
+  renderDiscover();
+  updateFabs();
+});
+
+// 更新全局变量以便轮询刷新
+setInterval(() => {}, 1000);
+</script>
+
+</div><!-- /phone-frame -->
+</body>
+</html>

@@ -1,0 +1,81 @@
+// ============================================
+// TrailMemo 全局动画定义
+// ============================================
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes spring-enter {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fade-up-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(16rpx);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba($color-primary-500, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 16rpx rgba($color-primary-500, 0);
+  }
+}
+
+@keyframes checkin-bounce {
+  0% { transform: scale(0); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+@keyframes confetti-fall {
+  0% {
+    opacity: 1;
+    transform: translateY(-100%) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(100vh) rotate(720deg);
+  }
+}
+
+// 应用动画的工具类
+.anim-spring-enter {
+  animation: spring-enter $duration-spring $spring-bouncy both;
+}
+
+.anim-fade-up {
+  animation: fade-up-enter $duration-normal $spring-decelerate both;
+}
+
+.anim-fade-in {
+  animation: fade-in $duration-normal $spring-default both;
+}
+
+// 延迟工具类
+@for $i from 1 through 10 {
+  .anim-delay-#{$i} {
+    animation-delay: #{$i * 0.05}s;
+  }
+}

@@ -1,0 +1,113 @@
+// ============================================
+// TrailMemo CSS Reset
+// 基于 Apple HIG 的全局样式重置
+// ============================================
+
+page {
+  font-family: $font-family;
+  font-size: $font-size-body;
+  line-height: $line-height-normal;
+  color: $color-gray-900;
+  background-color: $color-bg-secondary;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+// 移除默认边距
+view, scroll-view, swiper, swiper-item, cover-view {
+  box-sizing: border-box;
+}
+
+// 图片默认行为
+image {
+  display: block;
+  max-width: 100%;
+}
+
+// 输入框重置
+input, textarea {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+// 按钮重置
+button {
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+
+  &::after {
+    border: none;
+  }
+}
+
+// 链接默认样式
+navigator {
+  color: $color-info;
+}
+
+// 安全区域适配
+.safe-area-bottom {
+  padding-bottom: constant(safe-area-inset-bottom);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+// 毛玻璃效果 (iOS 风格)
+.glass-surface {
+  background: $glass-bg;
+  backdrop-filter: blur($glass-blur);
+  -webkit-backdrop-filter: blur($glass-blur);
+  border-bottom: 1px solid $glass-border;
+}
+
+// 卡片基础样式
+.card {
+  background: $color-bg-primary;
+  border-radius: $radius-md;
+  box-shadow: $shadow-sm;
+}
+
+// 页面内容区域
+.page-content {
+  min-height: 100vh;
+  padding: 0 $page-inset;
+  padding-bottom: constant(safe-area-inset-bottom);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+// 弹性布局工具
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+// 文字省略
+.text-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.text-ellipsis-2 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
